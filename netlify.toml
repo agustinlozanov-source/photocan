@@ -1,0 +1,7 @@
+# Sitio estático: el proyecto en Netlify aún conserva la configuración de Next.js.
+[build]
+  command = "echo Sitio estatico sin compilacion"
+  publish = "."
+
+[build.environment]
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"

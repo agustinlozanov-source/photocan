@@ -1,7 +1,8 @@
-# Sitio estático: el proyecto en Netlify aún conserva la configuración de Next.js.
+# Sitio estático. El proyecto en Netlify conserva la carpeta de publicación de Next.js,
+# así que el sitio se copia a .next y se omite el plugin.
 [build]
-  command = "echo Sitio estatico sin compilacion"
-  publish = "."
+  command = "mkdir -p .next && cp index.html .next/index.html"
+  publish = ".next"
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"

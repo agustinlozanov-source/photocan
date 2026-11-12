@@ -1,8 +1,21 @@
-# Sitio estático. El proyecto en Netlify conserva la carpeta de publicación de Next.js,
-# así que el sitio se copia a .next y se omite el plugin.
 [build]
-  command = "mkdir -p .next && cp index.html .next/index.html"
-  publish = ".next"
+  command = "npm run build"
+  publish = "out"
 
 [build.environment]
+  # Exportación estática: no hace falta el runtime de Next en Netlify.
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# phot8can.studio era el dominio de la página de bodas: todo se va a phot8can.com/bodas/.
+# Descomentar SOLO cuando phot8can.com ya esté conectado y con HTTPS en Netlify.
+# [[redirects]]
+#   from = "https://phot8can.studio/*"
+#   to = "https://phot8can.com/bodas/"
+#   status = 301
+#   force = true
+#
+# [[redirects]]
+#   from = "https://www.phot8can.studio/*"
+#   to = "https://phot8can.com/bodas/"
+#   status = 301
+#   force = true

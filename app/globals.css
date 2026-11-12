@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* Paleta y tipografía del Manual de Identidad Visual de Phot8can. */
+@theme inline {
+  --font-sans: var(--font-montserrat);
+  --color-amarillo: #f3af0e;
+  --color-negro: #000;
+  --color-blanco: #fff;
+  --color-humo: #f4f4f2;
+  --color-gris: #6b6b6b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #000;
+  color: #000;
+  font-family: var(--font-montserrat), sans-serif;
+}
+
+/* Títulos: ExtraBold, interletrado −35. Subtítulos: Light, mayúsculas, +300. */
+.titulo {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+.subtitulo {
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+}
+
+.contenedor {
+  padding-inline: 5vw;
+}
+@media (max-width: 767px) {
+  .contenedor {
+    padding-inline: 6vw;
+  }
+}
+
+/* Brillo mostaza del hero, como la luz detrás de una silueta. */
+.hero-brillo {
+  background:
+    radial-gradient(ellipse 55% 70% at 70% 42%, #ffe08a 0%, #f3af0e 22%, #c27800 42%, #4d2700 64%, #140a00 82%, #000 100%);
+}
+@media (max-width: 767px) {
+  .hero-brillo {
+    background: radial-gradient(ellipse 100% 45% at 60% 92%, #ffe08a 0%, #f3af0e 22%, #c27800 42%, #4d2700 64%, #140a00 82%, #000 100%);
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* El hero entra justo cuando se va la pantalla de carga (o de inmediato si ya se vio). */
+:root {
+  --entrada: 1500ms;
+}
+:root[data-sin-cargador] {
+  --entrada: 0ms;
+}
+.subir {
+  animation: subir 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--entrada) + var(--d, 0ms));
+}
+
+@keyframes flotar {
+  0%,
+  100% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  50% {
+    transform: translateY(calc(-50% - 14px)) rotate(-1.2deg);
+  }
+}
+.flotar {
+  animation: flotar 9s ease-in-out infinite;
+}
+
+@keyframes carrusel {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.carrusel {
+  animation: carrusel 38s linear infinite;
+}
+
+/* Aparece al entrar en pantalla (ver components/Aparece.tsx). */
+.aparece {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.aparece.visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .subir,
+  .flotar,
+  .carrusel {
+    animation: none;
+  }
+  .aparece {
+    opacity: 1;
+    transform: none;
+  }
+}

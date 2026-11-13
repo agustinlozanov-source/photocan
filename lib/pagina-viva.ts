@@ -430,8 +430,11 @@ export const reels = [
  * Portafolio de páginas. Mientras esté vacío se muestran tarjetas de relleno.
  * `captura`: imagen en /public/portafolio/ (vista de escritorio, 16:10 aprox.).
  */
-// TODO: agregar los proyectos reales.
-export const portafolio: { cliente: string; giro: string; url: string; captura?: string }[] = [];
+export const portafolio: { cliente: string; giro: string; url: string; captura?: string }[] = [
+  { cliente: "Avalluo", giro: "Avalúos industriales", url: "https://avalluo.com", captura: "/portafolio/avalluo.webp" },
+  { cliente: "Flow Hub CRM", giro: "Software con IA para ventas", url: "https://landing.flowhubcrm.app", captura: "/portafolio/flowhub.webp" },
+  { cliente: "Tino Lozano", giro: "Consultoría empresarial", url: "https://agustinlozano.com", captura: "/portafolio/tino-lozano.webp" },
+];
 
 /** Seguridad y normas. Redacción "alineado a", no "certificado": ajustar si hay certificaciones formales. */
 export const seguridad = [

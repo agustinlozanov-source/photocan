@@ -59,7 +59,7 @@ export function PvPortafolio() {
                             src={p.captura}
                             alt={`Página de ${p.cliente}`}
                             loading="lazy"
-                            className="h-full w-full object-cover object-top transition-transform duration-[1.6s] ease-out group-hover:-translate-y-[8%]"
+                            className="h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                           />
                         ) : (
                           <div className="grid h-full place-items-center text-[13px] text-white/50">{dominio(p.url)}</div>
@@ -70,7 +70,7 @@ export function PvPortafolio() {
                       <p className="etiqueta text-[11px] text-white/80">
                         {p.cliente} · {p.giro}
                       </p>
-                      <span className="flex items-center gap-1.5 text-[13px] font-semibold text-amarillo">
+                      <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap text-amarillo">
                         Ver página <Flecha className="size-3" />
                       </span>
                     </div>

@@ -14,7 +14,6 @@ export type SitioCliente = {
   repo: string | null;
   pr_numero: number | null;
   resumen_agente: string | null;
-  costo_centavos_usd: number | null;
   actualizado: string;
 };
 

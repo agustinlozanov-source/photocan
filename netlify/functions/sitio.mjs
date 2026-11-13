@@ -30,7 +30,6 @@ const publico = (s) =>
     repo: s.repo,
     pr_numero: s.pr_numero,
     resumen_agente: s.resumen_agente,
-    costo_centavos_usd: s.costo_centavos_usd,
     actualizado: s.actualizado,
   };
 

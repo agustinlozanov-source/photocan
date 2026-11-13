@@ -122,3 +122,30 @@ body {
     transform: none;
   }
 }
+
+/* Al exportar a PDF solo sale la cotización de Página Viva. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  body > *:not(#cotizacion) {
+    display: none !important;
+  }
+  #cotizacion {
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Etiquetas como en la campaña: mayúsculas, bold y muy espaciadas ("PRECIO REGULAR"). */
+.etiqueta {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 12px;
+}

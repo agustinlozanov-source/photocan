@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { cliente } from "@/lib/portal";
 import { reiniciarDemo, usePortal } from "@/lib/portal-estado";
+import { salir, useSesion } from "@/lib/sesion";
 import { IconoPortal, type IconoPortalNombre } from "./Iconos";
 
 const NAV: { href: string; texto: string; icono: IconoPortalNombre; movil?: boolean }[] = [
@@ -21,11 +22,16 @@ const limpia = (r: string) => (r.length > 1 ? r.replace(/\/$/, "") : r);
 
 function BannerDemo() {
   const e = usePortal();
+  const s = useSesion();
+  if (s.estado !== "fuera") return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-amarillo px-4 py-2 text-[12px] font-semibold text-black lg:px-6">
       <p className="flex items-center gap-2">
         <IconoPortal nombre="chispa" className="size-4" />
         Demostración del portal · los datos son de ejemplo
+        <Link href="/portal/entrar/" className="underline underline-offset-2">
+          Entrar con mi correo
+        </Link>
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-black/60">Ver como:</span>
@@ -53,6 +59,24 @@ function BannerDemo() {
 export function Marco({ children }: { children: React.ReactNode }) {
   const ruta = limpia(usePathname() || "/portal");
   const [menu, setMenu] = useState(false);
+  const s = useSesion();
+  const router = useRouter();
+  const real = s.estado === "dentro";
+  const negocio = real ? (s.org?.nombre ?? "Tu negocio") : cliente.negocio;
+  const dominio = real ? (s.org?.dominio ?? "Dominio por definir") : cliente.dominio;
+  const nombre = real ? s.nombre : cliente.nombreCompleto;
+  const correo = real ? s.usuario.correo : cliente.correo;
+  const iniciales = nombre
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const cerrar = async () => {
+    if (real) await salir();
+    router.push("/portal/entrar/");
+  };
   const activo = (href: string) => {
     const h = limpia(href);
     return h === "/portal" ? ruta === h : ruta.startsWith(h);
@@ -71,10 +95,10 @@ export function Marco({ children }: { children: React.ReactNode }) {
 
           <div className="mt-8 rounded-2xl bg-white/[0.06] p-3">
             <p className="text-[11px] text-white/45">Tu página</p>
-            <p className="mt-0.5 truncate text-[14px] font-bold">{cliente.negocio}</p>
+            <p className="mt-0.5 truncate text-[14px] font-bold">{negocio}</p>
             <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-white/60">
               <span className="size-1.5 shrink-0 rounded-full bg-amarillo" />
-              {cliente.dominio}
+              {dominio}
             </p>
           </div>
 
@@ -102,14 +126,14 @@ export function Marco({ children }: { children: React.ReactNode }) {
               Hablar con el equipo
             </a>
             <div className="flex items-center gap-3 px-3">
-              <span className="grid size-9 place-items-center rounded-full bg-amarillo text-[13px] font-extrabold text-black">AT</span>
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-amarillo text-[13px] font-extrabold text-black">{iniciales}</span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold">{cliente.nombreCompleto}</p>
-                <p className="truncate text-[11px] text-white/45">{cliente.correo}</p>
+                <p className="truncate text-[13px] font-semibold">{nombre}</p>
+                <p className="truncate text-[11px] text-white/45">{correo}</p>
               </div>
-              <Link href="/portal/entrar/" aria-label="Cerrar sesión" className="text-white/50 hover:text-white">
+              <button onClick={cerrar} aria-label="Cerrar sesión" className="text-white/50 hover:text-white">
                 <IconoPortal nombre="salir" className="size-[18px]" />
-              </Link>
+              </button>
             </div>
           </div>
         </aside>
@@ -123,7 +147,7 @@ export function Marco({ children }: { children: React.ReactNode }) {
             onClick={() => setMenu(true)}
             className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-semibold"
           >
-            <span className="grid size-6 place-items-center rounded-full bg-amarillo text-[10px] font-extrabold text-black">AT</span>
+            <span className="grid size-6 place-items-center rounded-full bg-amarillo text-[10px] font-extrabold text-black">{iniciales}</span>
             Menú
           </button>
         </div>
@@ -136,8 +160,8 @@ export function Marco({ children }: { children: React.ReactNode }) {
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] font-bold">{cliente.negocio}</p>
-                  <p className="text-[12px] text-white/50">{cliente.correo}</p>
+                  <p className="text-[14px] font-bold">{negocio}</p>
+                  <p className="text-[12px] text-white/50">{correo}</p>
                 </div>
                 <button onClick={() => setMenu(false)} aria-label="Cerrar menú" className="grid size-9 place-items-center rounded-full bg-white/10">
                   <IconoPortal nombre="cerrar" className="size-4" />
@@ -157,10 +181,10 @@ export function Marco({ children }: { children: React.ReactNode }) {
                     {n.texto}
                   </Link>
                 ))}
-                <Link href="/portal/entrar/" className="flex items-center gap-2.5 rounded-2xl bg-white/[0.06] px-3 py-3 text-[13px] font-semibold">
+                <button onClick={cerrar} className="flex items-center gap-2.5 rounded-2xl bg-white/[0.06] px-3 py-3 text-left text-[13px] font-semibold">
                   <IconoPortal nombre="salir" className="size-[18px]" />
-                  Cerrar sesión
-                </Link>
+                  {real ? "Cerrar sesión" : "Entrar con mi correo"}
+                </button>
               </nav>
             </div>
           </div>

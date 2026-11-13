@@ -1,207 +1,274 @@
-// Briefing de Página Viva. VERSIÓN PRELIMINAR: se reemplaza por el briefing completo
-// que mande el equipo. Para agregar o quitar preguntas basta con editar este arreglo.
+// Brief de Página Viva (versión del PDF "Brief para crear tu página web").
+//
+// 1) Preguntas de CLIC: dan el contexto del negocio en un par de minutos. Algunas
+//    solo aparecen según lo que se eligió antes (rutas de identidad visual).
+// 2) CHAT: todo lo que es texto libre se platica con el asistente (escribiendo,
+//    dictando o en modo voz). El asistente va llenando los "campos de chat".
+//
+// Todo se guarda en briefings.respuestas (jsonb) con estas mismas claves.
 
-export type Campo =
-  | { id: string; tipo: "texto" | "url" | "telefono" | "correo"; etiqueta: string; ayuda?: string; ejemplo?: string; obligatorio?: boolean }
-  | { id: string; tipo: "area"; etiqueta: string; ayuda?: string; ejemplo?: string; obligatorio?: boolean }
-  | { id: string; tipo: "opciones" | "multiple"; etiqueta: string; ayuda?: string; opciones: string[]; obligatorio?: boolean }
-  | { id: string; tipo: "archivo"; etiqueta: string; ayuda?: string; acepta?: string; obligatorio?: boolean }
-  | { id: string; tipo: "servicios"; etiqueta: string; ayuda?: string; obligatorio?: boolean };
+export type Respuestas = Record<string, string | string[]>;
 
-export type Seccion = { id: string; titulo: string; intro: string; minutos: number; campos: Campo[] };
+export type PreguntaClic = {
+  id: string;
+  titulo: string;
+  ayuda?: string;
+  tipo: "una" | "varias" | "colores";
+  opciones?: string[];
+  maximo?: number;
+  /** Opción que, si se elige, quita las demás (p. ej. "Todavía no tengo materiales"). */
+  exclusiva?: string;
+  visible?: (r: Respuestas) => boolean;
+};
 
-export const secciones: Seccion[] = [
+const tiene = (r: Respuestas, id: string, valor: string) => {
+  const v = r[id];
+  return Array.isArray(v) ? v.includes(valor) : v === valor;
+};
+
+export const LOGO = "Logotipo";
+export const IDENTIDAD = "Identidad visual o manual de marca";
+export const RULETA = "Elegir 2 o 3 colores con la ruleta";
+export const PROPONE = "Prefiero que Phot8can proponga los colores";
+export const REF_PARECIDA = "Sí, quiero que se parezca mucho";
+export const REF_INSPIRACION = "Sí, solo como inspiración";
+const conReferencia = (r: Respuestas) => r.referencia === REF_PARECIDA || r.referencia === REF_INSPIRACION;
+
+export const preguntasClic: PreguntaClic[] = [
   {
-    id: "negocio",
-    titulo: "Tu negocio",
-    intro: "Lo básico: quién eres y qué haces. Con esto escribimos los textos de tu página.",
-    minutos: 4,
-    campos: [
-      { id: "nombre", tipo: "texto", etiqueta: "Nombre de tu negocio", ejemplo: "Clínica Dental Sonrisa", obligatorio: true },
-      {
-        id: "giro",
-        tipo: "opciones",
-        etiqueta: "Giro",
-        opciones: ["Salud", "Belleza y bienestar", "Restaurante o comida", "Servicios profesionales", "Tienda", "Educación", "Inmobiliaria", "Construcción e industria", "Otro"],
-        obligatorio: true,
-      },
-      { id: "dedica", tipo: "area", etiqueta: "¿A qué se dedica tu negocio?", ayuda: "Cuéntalo como se lo dirías a un cliente nuevo.", obligatorio: true },
-      { id: "diferente", tipo: "area", etiqueta: "¿Qué te hace diferente de la competencia?", ejemplo: "Atendemos el mismo día, tenemos estacionamiento, 15 años de experiencia…" },
-      { id: "desde", tipo: "texto", etiqueta: "¿Desde cuándo existe?", ejemplo: "2011" },
-      {
-        id: "local",
-        tipo: "opciones",
-        etiqueta: "¿Cómo atiendes?",
-        opciones: ["Tengo local físico", "Voy a domicilio", "Solo en línea", "Local y a domicilio"],
-        obligatorio: true,
-      },
+    id: "rubro",
+    titulo: "¿Cuál es el rubro de tu negocio?",
+    tipo: "una",
+    opciones: [
+      "Restaurante o alimentos",
+      "Tienda o venta de productos",
+      "Salud o bienestar",
+      "Belleza o cuidado personal",
+      "Servicios profesionales",
+      "Construcción o industria",
+      "Educación",
+      "Entretenimiento o eventos",
+      "Otro",
     ],
   },
   {
-    id: "contacto",
-    titulo: "Contacto y ubicación",
-    intro: "Cómo te encuentran y te escriben. Estos datos aparecen en tu página y en Google Maps.",
-    minutos: 3,
-    campos: [
-      { id: "whatsapp", tipo: "telefono", etiqueta: "WhatsApp del negocio", ejemplo: "868 123 4567", obligatorio: true },
-      { id: "telefono", tipo: "telefono", etiqueta: "Teléfono fijo (si tienes)" },
-      { id: "correo", tipo: "correo", etiqueta: "Correo de contacto", ejemplo: "hola@tunegocio.mx", obligatorio: true },
-      { id: "direccion", tipo: "area", etiqueta: "Dirección", ayuda: "Calle, número, colonia, ciudad y código postal." },
-      { id: "zona", tipo: "texto", etiqueta: "Zona o ciudades que atiendes", ejemplo: "Matamoros y Brownsville" },
-      { id: "horarios", tipo: "area", etiqueta: "Horarios", ejemplo: "Lunes a viernes 9 a 7, sábado 9 a 2" },
+    id: "objetivo",
+    titulo: "¿Qué quieres que haga el visitante en tu página?",
+    ayuda: "Elige el objetivo principal.",
+    tipo: "una",
+    opciones: [
+      "Escribir por WhatsApp",
+      "Hacer un pedido",
+      "Comprar y pagar en línea",
+      "Agendar una cita o reservación",
+      "Solicitar una cotización",
+      "Conocer nuestros servicios o trabajos",
     ],
   },
   {
-    id: "servicios",
-    titulo: "Servicios y precios",
-    intro: "Cada servicio puede tener su propia página. Así te encuentran en Google por cada cosa que haces.",
-    minutos: 6,
-    campos: [
-      { id: "lista", tipo: "servicios", etiqueta: "Tus servicios o productos", ayuda: "Agrega todos. Si un precio varía, escribe “desde”.", obligatorio: true },
-      { id: "estrella", tipo: "texto", etiqueta: "¿Cuál es el que más quieres vender?", obligatorio: true },
-      { id: "promos", tipo: "area", etiqueta: "Promociones vigentes", ejemplo: "Limpieza + blanqueamiento a $1,990 hasta diciembre" },
-      { id: "pagos", tipo: "multiple", etiqueta: "¿Qué formas de pago aceptas?", opciones: ["Efectivo", "Tarjeta", "Transferencia", "Meses sin intereses", "Pago en línea"] },
+    id: "informacion",
+    titulo: "¿Qué información debe aparecer?",
+    ayuda: "Elige hasta 4.",
+    tipo: "varias",
+    maximo: 4,
+    opciones: [
+      "Productos, catálogo o menú",
+      "Servicios o paquetes",
+      "Precios y promociones",
+      "Galería de trabajos",
+      "Historia y equipo",
+      "Testimonios y reseñas",
+      "Ubicación, horarios y contacto",
     ],
   },
   {
-    id: "cliente",
-    titulo: "Tu cliente",
-    intro: "Escribimos para la persona que te compra, con sus palabras.",
-    minutos: 4,
-    campos: [
-      { id: "ideal", tipo: "area", etiqueta: "¿Quién es tu cliente ideal?", ejemplo: "Mamás de 30 a 45 años que buscan ortodoncia para sus hijos…", obligatorio: true },
-      { id: "preguntas", tipo: "area", etiqueta: "¿Qué te preguntan siempre?", ayuda: "Una por línea. Se vuelven tus preguntas frecuentes.", obligatorio: true },
-      { id: "eligen", tipo: "area", etiqueta: "¿Por qué te eligen tus clientes?" },
-      { id: "competencia", tipo: "area", etiqueta: "Tu competencia", ayuda: "Nombres o páginas de 2 o 3 negocios como el tuyo." },
+    id: "atencion",
+    titulo: "¿Cómo atiende tu negocio?",
+    ayuda: "Elige las que correspondan.",
+    tipo: "varias",
+    opciones: ["En línea", "En un local", "A domicilio o por zonas"],
+  },
+  {
+    id: "materiales",
+    titulo: "¿Qué materiales tienes?",
+    ayuda: "Los archivos los mandas después en el chat, con el botón +.",
+    tipo: "varias",
+    exclusiva: "Todavía no tengo materiales",
+    opciones: [LOGO, IDENTIDAD, "Fotografías y videos", "Menú, catálogo o lista de servicios", "Textos del negocio", "Todavía no tengo materiales"],
+  },
+  {
+    id: "colores_ruta",
+    titulo: "Tienes logo, pero no identidad visual. ¿Qué hacemos con los colores?",
+    tipo: "una",
+    opciones: ["Usar los colores de mi logotipo", RULETA, "Dejar que Phot8can proponga los colores"],
+    visible: (r) => tiene(r, "materiales", LOGO) && !tiene(r, "materiales", IDENTIDAD),
+  },
+  {
+    id: "logo_tipo",
+    titulo: "No tienes logo: hagamos uno básico. ¿Qué tipo prefieres?",
+    tipo: "una",
+    opciones: ["Solo el nombre", "Nombre con un símbolo sencillo", "Iniciales del negocio", "Propuesta de Phot8can"],
+    visible: (r) => !tiene(r, "materiales", LOGO),
+  },
+  {
+    id: "logo_transmite",
+    titulo: "¿Qué debe transmitir tu marca?",
+    ayuda: "Elige hasta 2.",
+    tipo: "varias",
+    maximo: 2,
+    opciones: ["Confianza", "Cercanía", "Elegancia", "Energía", "Creatividad", "Tranquilidad"],
+    visible: (r) => !tiene(r, "materiales", LOGO),
+  },
+  {
+    id: "colores",
+    titulo: "Elige los colores de tu marca",
+    ayuda: "Dos o tres colores. Toca cada círculo para cambiarlo.",
+    tipo: "colores",
+    visible: (r) => !tiene(r, "materiales", LOGO) || tiene(r, "colores_ruta", RULETA),
+  },
+  {
+    id: "precios",
+    titulo: "¿Cómo mostramos tus precios?",
+    tipo: "una",
+    opciones: ["Precios visibles", "Precios desde una cantidad inicial", "Solicitar cotización", "Consultar por WhatsApp"],
+  },
+  {
+    id: "lista_productos",
+    titulo: "Tu lista de productos o servicios…",
+    ayuda: "Con nombres, descripciones y precios si se publican.",
+    tipo: "una",
+    opciones: ["La subo en el chat", "Comparto una carpeta", "Necesito ayuda para organizarla"],
+  },
+  {
+    id: "funciones",
+    titulo: "¿Qué funciones necesitas?",
+    ayuda: "Elige hasta 3.",
+    tipo: "varias",
+    maximo: 3,
+    opciones: [
+      "Botón de WhatsApp",
+      "Formulario de contacto o cotización",
+      "Catálogo o menú digital",
+      "Pedidos por WhatsApp",
+      "Compra y pago en línea",
+      "Citas o reservaciones",
+      "Asistente automático",
+      "Necesito orientación",
     ],
   },
   {
-    id: "identidad",
-    titulo: "Identidad",
-    intro: "Tu logo, tus colores y tu estilo. Si no tienes, te ayudamos a crearlos.",
-    minutos: 3,
-    campos: [
-      { id: "logo", tipo: "opciones", etiqueta: "¿Tienes logo?", opciones: ["Sí, tengo logo", "Tengo, pero quiero renovarlo", "No, necesito uno"], obligatorio: true },
-      { id: "logoArchivo", tipo: "archivo", etiqueta: "Sube tu logo", ayuda: "De preferencia PNG, SVG o PDF en buena calidad.", acepta: "image/*,.pdf,.svg,.ai,.eps" },
-      { id: "manual", tipo: "archivo", etiqueta: "Manual de identidad (si tienes)", acepta: ".pdf,image/*" },
-      { id: "colores", tipo: "texto", etiqueta: "Tus colores", ejemplo: "Azul marino y blanco" },
-      {
-        id: "estilo",
-        tipo: "multiple",
-        etiqueta: "¿Cómo quieres que se sienta tu página?",
-        opciones: ["Moderna", "Elegante", "Cercana", "Divertida", "Minimalista", "Tradicional", "Tecnológica", "Natural"],
-      },
-    ],
+    id: "referencia",
+    titulo: "¿Hay alguna página cuyo diseño te guste?",
+    ayuda: "Nos ayuda a entender tu gusto. El enlace nos lo pasas en el chat.",
+    tipo: "una",
+    opciones: [REF_PARECIDA, REF_INSPIRACION, "No, que Phot8can proponga el diseño"],
   },
   {
-    id: "presencia",
-    titulo: "Redes y presencia",
-    intro: "Conectamos tu página con tus redes y revisamos lo que ya existe de ti en internet.",
-    minutos: 3,
-    campos: [
-      { id: "facebook", tipo: "url", etiqueta: "Página de Facebook", ejemplo: "facebook.com/tunegocio" },
-      { id: "instagram", tipo: "url", etiqueta: "Instagram", ejemplo: "@tunegocio" },
-      { id: "tiktok", tipo: "url", etiqueta: "TikTok" },
-      { id: "maps", tipo: "url", etiqueta: "Perfil de Google Maps" },
-      { id: "web", tipo: "url", etiqueta: "Página actual (si tienes)" },
-      {
-        id: "accesos",
-        tipo: "area",
-        etiqueta: "¿Quién tiene los accesos de tu página o dominio actual?",
-        ayuda: "Aunque no lo sepas, dinos quién la hizo. Nosotros lo rastreamos.",
-      },
-    ],
-  },
-  {
-    id: "material",
-    titulo: "Fotos y video",
-    intro: "Las fotos reales venden más que las de banco. Sube lo que tengas, aunque sea del celular.",
-    minutos: 3,
-    campos: [
-      { id: "fotos", tipo: "archivo", etiqueta: "Fotos de tu negocio, equipo y trabajos", acepta: "image/*" },
-      { id: "videos", tipo: "archivo", etiqueta: "Videos", acepta: "video/*" },
-      {
-        id: "sesion",
-        tipo: "opciones",
-        etiqueta: "¿Necesitas sesión de fotos o video?",
-        opciones: ["No, tengo suficiente material", "Sí, sesión de fotos", "Sí, fotos y video", "No sé, recomiéndenme"],
-      },
-    ],
-  },
-  {
-    id: "pagina",
-    titulo: "Tu página",
-    intro: "Qué quieres que haga tu página por ti.",
-    minutos: 4,
-    campos: [
-      {
-        id: "objetivo",
-        tipo: "opciones",
-        etiqueta: "Lo más importante es que la gente…",
-        opciones: ["Me escriba por WhatsApp", "Agende una cita", "Compre en línea", "Pida una cotización", "Me llame", "Visite mi local"],
-        obligatorio: true,
-      },
-      {
-        id: "paginas",
-        tipo: "multiple",
-        etiqueta: "Páginas que imaginas",
-        opciones: ["Inicio", "Una página por servicio", "Nosotros", "Galería", "Preguntas frecuentes", "Blog", "Contacto", "Tienda", "Citas"],
-      },
-      { id: "gustan", tipo: "area", etiqueta: "Páginas que te gustan", ayuda: "Pega enlaces y dinos qué te gusta de cada una." },
-      { id: "no", tipo: "area", etiqueta: "¿Algo que NO quieras?" },
-      { id: "idioma", tipo: "opciones", etiqueta: "Idioma", opciones: ["Solo español", "Español e inglés"] },
-    ],
-  },
-  {
-    id: "legal",
-    titulo: "Datos legales",
-    intro: "Para tu aviso de privacidad, tus términos y tu facturación. Se guardan cifrados.",
-    minutos: 3,
-    campos: [
-      { id: "razon", tipo: "texto", etiqueta: "Razón social o nombre del responsable", obligatorio: true },
-      { id: "rfc", tipo: "texto", etiqueta: "RFC" },
-      { id: "domicilioFiscal", tipo: "area", etiqueta: "Domicilio fiscal" },
-      { id: "correoFacturas", tipo: "correo", etiqueta: "Correo para facturas" },
-      {
-        id: "datos",
-        tipo: "multiple",
-        etiqueta: "¿Qué datos pedirá tu página a tus clientes?",
-        ayuda: "Con esto hacemos tu aviso de privacidad conforme a la ley.",
-        opciones: ["Nombre", "Teléfono o WhatsApp", "Correo", "Dirección", "Datos de salud", "Datos de pago", "Ninguno"],
-      },
-    ],
+    id: "dominio",
+    titulo: "¿Ya tienes dominio?",
+    ayuda: "El nombre de tu página, como tunegocio.com",
+    tipo: "una",
+    opciones: ["Sí", "No, necesito uno"],
   },
 ];
 
-export const totalCampos = secciones.reduce((n, s) => n + s.campos.length, 0);
+export const preguntasVisibles = (r: Respuestas) => preguntasClic.filter((p) => !p.visible || p.visible(r));
+
+/** Campos que el asistente llena platicando. `cuando` decide si aplican. */
+export type CampoChat = { id: string; etiqueta: string; pregunta: string; obligatorio?: boolean; cuando?: (r: Respuestas) => boolean };
+
+export const camposChat: CampoChat[] = [
+  { id: "nombre_comercial", etiqueta: "Nombre comercial", pregunta: "¿Cómo se llama tu negocio, tal cual quieres que aparezca?", obligatorio: true },
+  { id: "que_vende", etiqueta: "Qué vende u ofrece", pregunta: "Cuéntame qué vendes o qué servicios ofreces.", obligatorio: true },
+  { id: "otro_rubro", etiqueta: "Rubro", pregunta: "¿A qué rubro pertenece tu negocio?", obligatorio: true, cuando: (r) => r.rubro === "Otro" },
+  { id: "responsable", etiqueta: "Responsable", pregunta: "¿Quién es la persona responsable del negocio?", obligatorio: true },
+  { id: "whatsapp", etiqueta: "WhatsApp de contacto", pregunta: "¿A qué WhatsApp te contactamos para el proyecto?", obligatorio: true },
+  { id: "correo", etiqueta: "Correo", pregunta: "¿Y tu correo electrónico?", obligatorio: true },
+  { id: "whatsapp_negocio", etiqueta: "WhatsApp del negocio", pregunta: "¿Qué WhatsApp publicamos en la página? ¿Es el mismo?", obligatorio: true },
+  { id: "correo_publico", etiqueta: "Correo público", pregunta: "¿Hay un correo que quieras mostrar en la página?" },
+  {
+    id: "direccion",
+    etiqueta: "Dirección o Google Maps",
+    pregunta: "¿Cuál es la dirección de tu local, o el enlace de Google Maps?",
+    obligatorio: true,
+    cuando: (r) => (Array.isArray(r.atencion) ? r.atencion.includes("En un local") : false),
+  },
+  {
+    id: "zonas",
+    etiqueta: "Zonas que atiende",
+    pregunta: "¿Qué zonas o ciudades atiendes?",
+    obligatorio: true,
+    cuando: (r) => (Array.isArray(r.atencion) ? r.atencion.includes("A domicilio o por zonas") : false),
+  },
+  { id: "horarios", etiqueta: "Horarios", pregunta: "¿Cuáles son tus horarios de atención?", obligatorio: true },
+  { id: "redes", etiqueta: "Redes sociales", pregunta: "¿Tienes Facebook, Instagram o TikTok? Pásame los nombres o enlaces." },
+  { id: "logo_nombre", etiqueta: "Nombre exacto del logo", pregunta: "¿Qué nombre exacto debe llevar tu logo?", obligatorio: true, cuando: (r) => !(Array.isArray(r.materiales) && r.materiales.includes(LOGO)) },
+  { id: "enlace_materiales", etiqueta: "Enlace a materiales", pregunta: "Si tienes tus archivos en una carpeta (Drive, Dropbox), pásame el enlace." },
+  { id: "atiende_nombre", etiqueta: "Quién atiende las solicitudes", pregunta: "¿Quién va a recibir y atender las solicitudes que lleguen por la página?", obligatorio: true },
+  { id: "atiende_contacto", etiqueta: "Contacto de quien atiende", pregunta: "¿A qué WhatsApp o correo le llegan?", obligatorio: true },
+  {
+    id: "referencia_url",
+    etiqueta: "Página de referencia",
+    pregunta: "Pásame el enlace de la página que te gusta (o de varias, si son más).",
+    obligatorio: true,
+    cuando: conReferencia,
+  },
+  {
+    id: "referencia_gusta",
+    etiqueta: "Qué le gusta de esa página",
+    pregunta: "¿Qué es lo que más te gusta de esa página: los colores, cómo está acomodada, las fotos, las letras?",
+    cuando: conReferencia,
+  },
+  { id: "dominio_url", etiqueta: "Dominio actual", pregunta: "¿Cuál es tu dominio?", obligatorio: true, cuando: (r) => r.dominio === "Sí" },
+  { id: "fecha_publicacion", etiqueta: "Fecha deseada", pregunta: "¿Para cuándo te gustaría tener tu página publicada?" },
+  { id: "aprobador", etiqueta: "Quién aprueba la página", pregunta: "¿Quién va a revisar y aprobar la página?", obligatorio: true },
+  { id: "indispensable", etiqueta: "Algo indispensable", pregunta: "Para cerrar: ¿hay algo que sí o sí deba aparecer en tu página?" },
+];
+
+export const camposAplicables = (r: Respuestas) => camposChat.filter((c) => !c.cuando || c.cuando(r));
 
 export function respondido(v: unknown) {
-  if (Array.isArray(v))
-    return v.some((x) => {
-      if (!x.startsWith("{")) return x.trim().length > 0;
-      try {
-        return Boolean(JSON.parse(x).n?.trim());
-      } catch {
-        return false;
-      }
-    });
+  if (Array.isArray(v)) return v.length > 0;
   return typeof v === "string" && v.trim().length > 0;
 }
 
-export function avanceBriefing(respuestas: Record<string, unknown>, archivos: Record<string, string[]>) {
-  let n = 0;
-  for (const s of secciones)
-    for (const c of s.campos) {
-      const k = `${s.id}.${c.id}`;
-      if (c.tipo === "archivo" ? (archivos[k]?.length ?? 0) > 0 : respondido(respuestas[k])) n++;
-    }
-  return Math.round((n / totalCampos) * 100);
+/** Avance del brief en porcentaje: clics visibles + campos de chat que aplican. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- se mantiene la firma (archivos) para quien la llama
+export function avanceBriefing(r: Respuestas, _archivos?: Record<string, string[]>) {
+  const clics = preguntasVisibles(r);
+  const campos = camposAplicables(r);
+  const total = clics.length + campos.length;
+  const hechos = clics.filter((p) => respondido(r[p.id])).length + campos.filter((c) => respondido(r[c.id])).length;
+  return total ? Math.round((hechos / total) * 100) : 0;
 }
 
-export function avanceSeccion(s: Seccion, respuestas: Record<string, unknown>, archivos: Record<string, string[]>) {
-  const n = s.campos.filter((c) => {
-    const k = `${s.id}.${c.id}`;
-    return c.tipo === "archivo" ? (archivos[k]?.length ?? 0) > 0 : respondido(respuestas[k]);
-  }).length;
-  return { n, total: s.campos.length, faltanObligatorios: s.campos.filter((c) => c.obligatorio && !respondido(respuestas[`${s.id}.${c.id}`])).length };
+export const faltantes = (r: Respuestas) => camposAplicables(r).filter((c) => c.obligatorio && !respondido(r[c.id]));
+
+/* ---------- Conversación (se guarda como lista de JSON en respuestas._chat) ---------- */
+
+export type MensajeChat = { de: "cliente" | "asistente"; texto: string; adjuntos?: string[]; voz?: boolean };
+
+export const leerChat = (r: Respuestas): MensajeChat[] =>
+  (Array.isArray(r._chat) ? r._chat : []).flatMap((x) => {
+    try {
+      return [JSON.parse(x) as MensajeChat];
+    } catch {
+      return [];
+    }
+  });
+
+export const escribirChat = (m: MensajeChat[]) => m.map((x) => JSON.stringify(x));
+
+/** Resumen de los clics para dar contexto al asistente. */
+export function contextoClics(r: Respuestas) {
+  return preguntasVisibles(r)
+    .filter((p) => respondido(r[p.id]))
+    .map((p) => `- ${p.titulo} ${Array.isArray(r[p.id]) ? (r[p.id] as string[]).join(", ") : r[p.id]}`)
+    .join("\n");
+}
+
+/** Primer mensaje del asistente al llegar al chat. */
+export function saludo(r: Respuestas) {
+  const nombre = typeof r.nombre_comercial === "string" && r.nombre_comercial ? ` de ${r.nombre_comercial}` : "";
+  return `¡Listo! Ya tengo el panorama${nombre}. Ahora platiquemos: escríbeme, mándame una nota de voz o activa el modo voz, como te sea más fácil. Para empezar, ${(faltantes(r)[0]?.pregunta ?? "cuéntame lo que quieras de tu negocio.").replace(/^(¿?)(.)/, (_, signo: string, letra: string) => signo + letra.toLowerCase())}`;
 }

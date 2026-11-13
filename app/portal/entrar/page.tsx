@@ -5,10 +5,14 @@ import { useState } from "react";
 import { IconoPortal } from "@/components/portal/Iconos";
 import { whatsapp } from "@/lib/content";
 import { cliente } from "@/lib/portal";
+import { pedirEnlace, useSesion } from "@/lib/sesion";
 
 export default function Entrar() {
   const [correo, setCorreo] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const sesion = useSesion();
 
   return (
     <div className="grid min-h-dvh bg-black text-white lg:grid-cols-[1.1fr_1fr]">
@@ -41,9 +45,14 @@ export default function Entrar() {
         <div className="my-auto w-full max-w-[420px] self-center py-12">
           {!enviado ? (
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                setEnviado(true);
+                setEnviando(true);
+                setError(null);
+                const fallo = await pedirEnlace(correo.trim());
+                setEnviando(false);
+                if (fallo) setError(fallo);
+                else setEnviado(true);
               }}
             >
               <p className="etiqueta text-[11px] text-amarillo">Entrar</p>
@@ -61,20 +70,35 @@ export default function Entrar() {
                 required
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                placeholder={cliente.correo}
+                placeholder="tu@negocio.mx"
                 className="mt-2 w-full rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-[15px] outline-none placeholder:text-white/30 focus:border-amarillo"
               />
+              {error && (
+                <p role="alert" className="mt-3 rounded-xl bg-red-500/15 px-4 py-3 text-[13px] text-red-200">
+                  {error}
+                </p>
+              )}
               <button
                 type="submit"
+                disabled={enviando}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-amarillo px-6 py-4 text-[14px] font-bold text-black transition-colors hover:bg-white"
               >
-                Mándame el enlace
+                {enviando ? "Mandando…" : "Mándame el enlace"}
                 <IconoPortal nombre="flecha" className="size-4" />
               </button>
               <p className="mt-6 flex items-center gap-2 text-[12px] text-white/45">
                 <IconoPortal nombre="candado" className="size-4" />
                 El enlace vale 15 minutos y solo funciona una vez.
               </p>
+              {sesion.estado === "dentro" ? (
+                <Link href="/portal/" className="mt-8 block rounded-2xl border border-amarillo/40 px-4 py-3 text-[13px] text-amarillo hover:bg-amarillo/10">
+                  Ya iniciaste sesión como {sesion.usuario.correo}. Ir a mi portal →
+                </Link>
+              ) : (
+                <Link href="/portal/" className="mt-8 inline-block text-[13px] text-white/55 underline-offset-2 hover:text-white hover:underline">
+                  O mira la demostración del portal
+                </Link>
+              )}
             </form>
           ) : (
             <div>
@@ -87,15 +111,8 @@ export default function Entrar() {
               <h2 className="titulo mt-6 text-[clamp(28px,3vw,40px)] leading-[1.05]">Revisa tu correo.</h2>
               <p className="mt-3 text-[15px] leading-relaxed text-white/65">
                 Te mandamos un enlace a <b className="text-white">{correo || cliente.correo}</b>. Ábrelo desde este mismo
-                dispositivo para entrar.
+                dispositivo y navegador para entrar. Si no llega en un par de minutos, revisa tu carpeta de spam.
               </p>
-              <Link
-                href="/portal/"
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-amarillo px-6 py-4 text-[14px] font-bold text-black transition-colors hover:bg-white"
-              >
-                Abrir el enlace (demostración)
-                <IconoPortal nombre="flecha" className="size-4" />
-              </Link>
               <button onClick={() => setEnviado(false)} className="mt-4 w-full text-[13px] text-white/55 hover:text-white">
                 Usar otro correo
               </button>

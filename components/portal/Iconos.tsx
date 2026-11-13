@@ -107,6 +107,9 @@ const RUTAS = {
   ),
   campana: <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4" />,
   grafica: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  arriba: <path d="M12 19V5M6 11l6-6 6 6" />,
+  onda: <path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4" />,
+  detener: <rect x="7" y="7" width="10" height="10" rx="2" />,
 } as const;
 
 export type IconoPortalNombre = keyof typeof RUTAS;

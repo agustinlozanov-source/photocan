@@ -120,6 +120,14 @@ export async function pedirEnlace(correo: string) {
   return "No pudimos mandar el enlace. Intenta de nuevo en un momento.";
 }
 
+/** Entra con el código de 8 dígitos que llega en el correo. */
+export async function entrarConCodigo(correo: string, codigo: string) {
+  const { error } = await sb().auth.verifyOtp({ email: correo, token: codigo.replace(/\s/g, ""), type: "email" });
+  if (!error) return null;
+  if (/expired|invalid/i.test(error.message)) return "El código no es válido o ya venció. Pide uno nuevo.";
+  return "No pudimos entrar con ese código. Intenta de nuevo.";
+}
+
 export async function crearOrganizacion(nombre: string) {
   const { error } = await sb().rpc("crear_mi_organizacion", { nombre });
   if (error) return error.message;

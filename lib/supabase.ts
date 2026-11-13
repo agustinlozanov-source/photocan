@@ -13,7 +13,8 @@ let cliente: SupabaseClient | null = null;
 export function sb() {
   if (!cliente) {
     cliente = createClient(URL, LLAVE, {
-      auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+      // "implicit": el enlace del correo abre la sesión aunque se abra en otro navegador o dispositivo.
+      auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
     });
   }
   return cliente;

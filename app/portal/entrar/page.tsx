@@ -5,7 +5,8 @@ import { useState } from "react";
 import { IconoPortal } from "@/components/portal/Iconos";
 import { whatsapp } from "@/lib/content";
 import { cliente } from "@/lib/portal";
-import { pedirEnlace, useSesion } from "@/lib/sesion";
+import { useRouter } from "next/navigation";
+import { entrarConCodigo, pedirEnlace, useSesion } from "@/lib/sesion";
 
 export default function Entrar() {
   const [correo, setCorreo] = useState("");
@@ -13,6 +14,8 @@ export default function Entrar() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sesion = useSesion();
+  const router = useRouter();
+  const [codigo, setCodigo] = useState("");
 
   return (
     <div className="grid min-h-dvh bg-black text-white lg:grid-cols-[1.1fr_1fr]">
@@ -113,6 +116,45 @@ export default function Entrar() {
                 Te mandamos un enlace a <b className="text-white">{correo || cliente.correo}</b>. Ábrelo desde este mismo
                 dispositivo y navegador para entrar. Si no llega en un par de minutos, revisa tu carpeta de spam.
               </p>
+              <form
+                className="mt-8 border-t border-white/10 pt-6"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setEnviando(true);
+                  setError(null);
+                  const fallo = await entrarConCodigo(correo.trim(), codigo);
+                  setEnviando(false);
+                  if (fallo) setError(fallo);
+                  else router.push("/portal/");
+                }}
+              >
+                <label htmlFor="codigo" className="block text-[13px] font-semibold text-white/80">
+                  O escribe el código del correo
+                </label>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    id="codigo"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))}
+                    placeholder="12345678"
+                    className="min-w-0 flex-1 rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-center font-mono text-[20px] tracking-[0.3em] outline-none placeholder:text-white/20 focus:border-amarillo"
+                  />
+                  <button
+                    type="submit"
+                    disabled={enviando || codigo.length < 6}
+                    className="rounded-full bg-amarillo px-6 text-[14px] font-bold text-black transition-colors hover:bg-white disabled:opacity-40"
+                  >
+                    Entrar
+                  </button>
+                </div>
+                {error && (
+                  <p role="alert" className="mt-3 rounded-xl bg-red-500/15 px-4 py-3 text-[13px] text-red-200">
+                    {error}
+                  </p>
+                )}
+              </form>
               <button onClick={() => setEnviado(false)} className="mt-4 w-full text-[13px] text-white/55 hover:text-white">
                 Usar otro correo
               </button>

@@ -115,7 +115,7 @@ export async function pedirEnlace(correo: string) {
   });
   if (!error) return null;
   if (error.status === 429 || /rate limit/i.test(error.message))
-    return "Pediste varios enlaces seguidos. Espera un minuto y vuelve a intentarlo.";
+    return "Ya se mandaron varios enlaces en poco tiempo. Revisa tu correo (y spam) o vuelve a intentarlo en un rato.";
   if (/invalid/i.test(error.message)) return "Revisa que tu correo esté bien escrito.";
   return "No pudimos mandar el enlace. Intenta de nuevo en un momento.";
 }

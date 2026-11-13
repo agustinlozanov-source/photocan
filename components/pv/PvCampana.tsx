@@ -58,6 +58,12 @@ export function PvCampana() {
                 <span className="text-[clamp(20px,2.2vw,36px)]">MXN</span>
               </p>
               {etapa && <p className="mt-4 text-[clamp(15px,1.2vw,18px)] font-semibold">{vigencia}</p>}
+              {etapa && (
+                <p className="mt-3 flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+                  Con el código
+                  <span className="rounded-md border-2 border-dashed border-black px-2.5 py-0.5 font-extrabold tracking-[0.12em]">{etapa.codigo}</span>
+                </p>
+              )}
             </div>
           </div>
           <Tienda />

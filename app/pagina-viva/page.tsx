@@ -6,7 +6,9 @@ import { PvCampana } from "@/components/pv/PvCampana";
 import { PvConfigurador } from "@/components/pv/PvConfigurador";
 import { PvHero } from "@/components/pv/PvHero";
 import { Encabezado as Titulo, PvContraste, PvLegal, PvPreguntas, PvResultado, PvSistema } from "@/components/pv/PvSecciones";
+import { PvPortafolio } from "@/components/pv/PvPortafolio";
 import { PvReels } from "@/components/pv/PvReels";
+import { PvSeguridad } from "@/components/pv/PvSeguridad";
 import { PvVolumen } from "@/components/pv/PvVolumen";
 import { Aparece, Boton, Flecha } from "@/components/ui";
 import { paginaViva, whatsapp } from "@/lib/content";
@@ -60,7 +62,9 @@ export default function PaginaViva() {
         <PvCampana />
         <PvSistema />
         <PvVolumen />
+        <PvPortafolio />
         <PvConfigurador />
+        <PvSeguridad />
         <PvLegal />
         <PvResultado />
         <Giros />

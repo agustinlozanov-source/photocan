@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { whatsapp } from "@/lib/content";
-import { incluido, modulos, mxn, pagos, totalIncluido } from "@/lib/pagina-viva";
+import { incluido, modulos, mxn, pagos, totalIncluido, validarCodigo, type Etapa } from "@/lib/pagina-viva";
 import { usePrecio } from "@/lib/precio";
 import { Aparece } from "../ui";
 import { Icono } from "./Icono";
+import { TarjetasAceptadas } from "./Tarjetas";
 
 type Metodo = "transferencia" | "tarjeta";
 
@@ -20,7 +21,7 @@ function Chevron({ abierto }: { abierto: boolean }) {
 
 /** Todo lo que trae el precio base, agrupado por categoría. */
 function Incluido() {
-  const { precio: precioBase } = usePrecio();
+  const { regular: precioBase } = usePrecio();
   return (
     <div className="rounded-[24px] bg-black p-[clamp(20px,2.6vw,40px)] text-white">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -140,7 +141,9 @@ function Cotizacion({
   meses,
   nombre,
   correo,
+  codigo,
 }: {
+  codigo: Etapa | null;
   elegidos: typeof modulos;
   total: number;
   porDefinir: number;
@@ -149,7 +152,7 @@ function Cotizacion({
   nombre: string;
   correo: string;
 }) {
-  const { precio: precioBase } = usePrecio();
+  const { regular: precioBase } = usePrecio();
   // Solo en el navegador: en el servidor no hay document.body.
   const montado = useSyncExternalStore(
     () => () => {},
@@ -192,6 +195,15 @@ function Cotizacion({
             </td>
             <td className="py-3 text-right align-top">{mxn(precioBase)}</td>
           </tr>
+          {codigo && (
+            <tr className="border-b border-black/10">
+              <td className="py-3">
+                <p className="font-semibold">Descuento {codigo.nombre}</p>
+                <p className="text-black/60">Código {codigo.codigo}</p>
+              </td>
+              <td className="py-3 text-right align-top">− {mxn(precioBase - codigo.precio)}</td>
+            </tr>
+          )}
           {elegidos.map((m) => (
             <tr key={m.id} className="border-b border-black/10">
               <td className="py-3">
@@ -232,7 +244,10 @@ function Cotizacion({
 }
 
 export function PvConfigurador() {
-  const { precio: precioBase, regular, etapa } = usePrecio();
+  const { regular, etapa } = usePrecio();
+  const [textoCodigo, setTextoCodigo] = useState("");
+  const [codigoAplicado, setCodigoAplicado] = useState<Etapa | null>(null);
+  const [avisoCodigo, setAvisoCodigo] = useState("");
   const [sel, setSel] = useState<string[]>([]);
   const [metodo, setMetodo] = useState<Metodo>("tarjeta");
   const [meses, setMeses] = useState(12);
@@ -249,8 +264,23 @@ export function PvConfigurador() {
     return () => io.disconnect();
   }, []);
 
+  // Un código solo vale mientras su etapa siga vigente.
+  const codigo = codigoAplicado && etapa?.codigo === codigoAplicado.codigo ? codigoAplicado : null;
+  const descuento = codigo ? regular - codigo.precio : 0;
+
+  const aplicarCodigo = (texto: string) => {
+    const r = validarCodigo(texto, Date.now());
+    if (r.ok) {
+      setCodigoAplicado(r.etapa);
+      setTextoCodigo("");
+      setAvisoCodigo("");
+    } else {
+      setAvisoCodigo(r.motivo);
+    }
+  };
+
   const elegidos = useMemo(() => modulos.filter((m) => sel.includes(m.id)), [sel]);
-  const total = precioBase + elegidos.reduce((n, m) => n + (m.precio ?? 0), 0);
+  const total = regular - descuento + elegidos.reduce((n, m) => n + (m.precio ?? 0), 0);
   const porDefinir = elegidos.filter((m) => m.precio == null).length;
   const mensual = Math.ceil(total / meses);
 
@@ -259,7 +289,8 @@ export function PvConfigurador() {
   const mensaje = [
     "Hola Phot8can, quiero contratar mi Página Viva.",
     "",
-    `• Página Viva: ${mxn(precioBase)}`,
+    `• Página Viva: ${mxn(regular)}`,
+    ...(codigo ? [`• Código ${codigo.codigo}: −${mxn(descuento)}`] : []),
     ...elegidos.map((m) => `• ${m.nombre}: ${m.precio == null ? "por definir" : mxn(m.precio)}`),
     "",
     `Total: ${mxn(total)} ${pagos.notaPrecio}${porDefinir ? ` + ${porDefinir} módulo(s) por definir` : ""}`,
@@ -314,11 +345,20 @@ export function PvConfigurador() {
             <ul className="mt-5 space-y-3 border-b border-black/10 pb-5 text-[14px]">
               <li className="flex items-baseline justify-between gap-3">
                 <span className="font-semibold">Página Viva</span>
-                <span className="text-right">
-                  {etapa && <span className="mr-2 text-[12px] text-black/40 line-through">{mxn(regular)}</span>}
-                  {mxn(precioBase)}
-                </span>
+                <span className="text-right">{mxn(regular)}</span>
               </li>
+              {codigo && (
+                <li className="flex items-baseline justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <button type="button" onClick={() => setCodigoAplicado(null)} className="text-black/30 hover:text-black" aria-label="Quitar código">
+                      ×
+                    </button>
+                    <span className="rounded-md bg-amarillo px-2 py-0.5 text-[11px] font-bold tracking-wide">{codigo.codigo}</span>
+                    <span className="truncate text-black/60">{codigo.nombre}</span>
+                  </span>
+                  <span className="shrink-0 font-semibold">− {mxn(descuento)}</span>
+                </li>
+              )}
               {elegidos.map((m) => (
                 <li key={m.id} className="flex items-baseline justify-between gap-3">
                   <span className="flex min-w-0 items-baseline gap-2">
@@ -333,9 +373,59 @@ export function PvConfigurador() {
               {elegidos.length === 0 && <li className="text-[13px] text-black/40">Sin módulos extra. Ya trae todo lo esencial.</li>}
             </ul>
 
+            {!codigo && (
+              <div className="pt-5">
+                {etapa && (
+                  <button
+                    type="button"
+                    onClick={() => aplicarCodigo(etapa.codigo)}
+                    className="flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-amarillo bg-amarillo/10 p-3 text-left transition-colors hover:bg-amarillo/25"
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amarillo">
+                      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
+                        <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+                        <circle cx="7.5" cy="8.5" r="1.5" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 text-[13px] leading-snug">
+                      Por {etapa.nombre}, usa el código <b className="tracking-wide">{etapa.codigo}</b> y paga{" "}
+                      <b>{mxn(etapa.precio)}</b>.
+                    </span>
+                    <span className="ml-auto shrink-0 text-[12px] font-bold underline underline-offset-2">Aplicar</span>
+                  </button>
+                )}
+                <form
+                  className="mt-2 flex gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    aplicarCodigo(textoCodigo);
+                  }}
+                >
+                  <input
+                    value={textoCodigo}
+                    onChange={(e) => {
+                      setTextoCodigo(e.target.value);
+                      setAvisoCodigo("");
+                    }}
+                    placeholder="Código de descuento"
+                    aria-label="Código de descuento"
+                    autoCapitalize="characters"
+                    className="min-w-0 flex-1 rounded-xl border border-black/15 px-4 py-2.5 text-[14px] uppercase outline-none placeholder:normal-case focus:border-black"
+                  />
+                  <button type="submit" className="shrink-0 rounded-xl bg-black px-4 text-[13px] font-semibold text-white hover:bg-black/80">
+                    Aplicar
+                  </button>
+                </form>
+                {avisoCodigo && <p className="mt-1.5 text-[12px] font-semibold text-[#c0392b]">{avisoCodigo}</p>}
+              </div>
+            )}
+
             <div className="flex items-baseline justify-between pt-5">
               <span className="text-[14px] font-semibold">Total</span>
-              <span className="titulo text-[34px] leading-none tabular-nums">{mxn(total)}</span>
+              <span className="text-right">
+                {codigo && <span className="mr-2 text-[14px] text-black/40 line-through">{mxn(total + descuento)}</span>}
+                <span className="titulo text-[34px] leading-none tabular-nums">{mxn(total)}</span>
+              </span>
             </div>
             <p className="mt-1 text-right text-[12px] text-black/50">
               {pagos.notaPrecio}
@@ -384,6 +474,11 @@ export function PvConfigurador() {
               </div>
             )}
 
+            <div className="mt-3 flex items-center justify-between gap-3 px-1">
+              <span className="text-[11px] text-black/45">Aceptamos</span>
+              <TarjetasAceptadas />
+            </div>
+
             <div className="mt-5 space-y-2">
               <input
                 value={nombre}
@@ -406,17 +501,33 @@ export function PvConfigurador() {
               rel="noopener"
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amarillo px-6 py-4 text-[15px] font-semibold text-black transition-colors hover:bg-black hover:text-white"
             >
+              <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                <rect x="5" y="10" width="14" height="10" rx="2" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+              </svg>
               Contratar ahora
+              <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
             </a>
             <button
               type="button"
               onClick={() => window.print()}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-black/20 px-6 py-3.5 text-[14px] font-semibold transition-colors hover:border-black"
             >
+              <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+              </svg>
               Descargar cotización en PDF
             </button>
             <p className="mt-4 text-center text-[12px] leading-relaxed text-black/50">
               Al contratar te confirmamos por WhatsApp y te enviamos {metodo === "tarjeta" ? "tu link de pago a meses" : "los datos para transferir"}.
+            </p>
+            <p className="mt-3 flex items-center justify-center gap-2 text-[11px] text-black/45">
+              <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Z" />
+              </svg>
+              Pago seguro · tus datos viajan cifrados
             </p>
           </aside>
         </div>
@@ -437,7 +548,7 @@ export function PvConfigurador() {
         </a>
       </div>
 
-      <Cotizacion elegidos={elegidos} total={total} porDefinir={porDefinir} metodo={metodo} meses={meses} nombre={nombre} correo={correo} />
+      <Cotizacion codigo={codigo} elegidos={elegidos} total={total} porDefinir={porDefinir} metodo={metodo} meses={meses} nombre={nombre} correo={correo} />
     </section>
   );
 }

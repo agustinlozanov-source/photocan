@@ -13,12 +13,14 @@ export const mxn = (n: number) =>
 export const etapas = [
   {
     nombre: "Buen Fin",
+    codigo: "BUENFIN",
     precio: 11900,
     hasta: "2026-11-17T23:59:59-06:00",
     vigencia: "Del 13 al 17 de noviembre.",
   },
   {
     nombre: "Precio de lanzamiento",
+    codigo: "PAGINAVIVA",
     precio: 14450,
     hasta: "2026-12-11T23:59:59-06:00",
     vigencia: "Hasta el 11 de diciembre.",
@@ -30,6 +32,23 @@ export type Etapa = (typeof etapas)[number];
 /** Índice de la etapa vigente, o -1 si ya rige el precio regular. */
 export function indiceEtapa(ahora: number) {
   return etapas.findIndex((e) => ahora <= Date.parse(e.hasta));
+}
+
+/** Normaliza lo que teclea el cliente: sin espacios, acentos ni mayúsculas/minúsculas. */
+export const normalizarCodigo = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+
+/** Valida un código contra la etapa vigente. Un código de una etapa vencida ya no aplica. */
+export function validarCodigo(texto: string, ahora: number): { ok: true; etapa: Etapa } | { ok: false; motivo: string } {
+  const c = normalizarCodigo(texto);
+  if (!c) return { ok: false, motivo: "Escribe un código." };
+  const i = indiceEtapa(ahora);
+  const vigente = i >= 0 ? etapas[i] : null;
+  if (vigente && normalizarCodigo(vigente.codigo) === c) return { ok: true, etapa: vigente };
+  const j = etapas.findIndex((e) => normalizarCodigo(e.codigo) === c);
+  if (j >= 0 && (i < 0 || j < i)) return { ok: false, motivo: "Ese código ya no está vigente." };
+  if (j >= 0) return { ok: false, motivo: "Ese código todavía no está activo." };
+  return { ok: false, motivo: "Ese código no existe." };
 }
 
 /** Texto completo de vigencia: "Del 13 al 17 de noviembre. Después, $14,450 hasta el 11 de diciembre." */
@@ -406,3 +425,40 @@ export const reels = [
     audio: false,
   },
 ];
+
+/**
+ * Portafolio de páginas. Mientras esté vacío se muestran tarjetas de relleno.
+ * `captura`: imagen en /public/portafolio/ (vista de escritorio, 16:10 aprox.).
+ */
+// TODO: agregar los proyectos reales.
+export const portafolio: { cliente: string; giro: string; url: string; captura?: string }[] = [];
+
+/** Seguridad y normas. Redacción "alineado a", no "certificado": ajustar si hay certificaciones formales. */
+export const seguridad = [
+  {
+    titulo: "Cifrado de punta a punta",
+    texto: "Todo tu sitio viaja por HTTPS con certificado incluido. Nadie puede leer lo que tu cliente escribe.",
+  },
+  {
+    titulo: "Prácticas ISO/IEC 27001",
+    texto: "Trabajamos con controles alineados a la norma de seguridad de la información: accesos, respaldos e incidentes.",
+  },
+  {
+    titulo: "Desarrollo seguro OWASP",
+    texto: "Construimos con base en el OWASP Top 10, la guía contra los ataques más comunes en la web.",
+  },
+  {
+    titulo: "Pagos con estándar PCI DSS",
+    texto: "Los cobros los procesa una pasarela certificada. Tu página nunca guarda datos de tarjeta.",
+  },
+  {
+    titulo: "Datos personales en regla",
+    texto: "Aviso de privacidad y manejo de datos conforme a la Ley Federal de Protección de Datos Personales.",
+  },
+  {
+    titulo: "Nube de clase mundial",
+    texto: "Infraestructura en la nube con red global, respaldos automáticos y disponibilidad las 24 horas.",
+  },
+];
+
+// Los logotipos de infraestructura y tecnología están en lib/logos.ts.

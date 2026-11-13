@@ -74,6 +74,15 @@ function Precio() {
       <p className="mt-3 text-[clamp(14px,1.1vw,16px)] font-semibold text-white/80">
         {etapa ? vigencia : "Pago único. Módulos opcionales aparte."}
       </p>
+      {etapa && (
+        <p className="mt-4 flex flex-wrap items-center gap-2 text-[14px] text-white/80">
+          Usa el código
+          <span className="rounded-md border-2 border-dashed border-amarillo px-2.5 py-0.5 font-extrabold tracking-[0.12em] text-amarillo">
+            {etapa.codigo}
+          </span>
+          en tu cotización.
+        </p>
+      )}
     </div>
   );
 }

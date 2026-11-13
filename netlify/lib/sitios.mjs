@@ -98,7 +98,10 @@ export async function asegurarRepo(nombre) {
   }
   for (let i = 0; i < 15; i++) {
     const rama = await gh(`/repos/${DUENO}/${nombre}/branches/main`);
-    if (rama.ok) return { repo: `${DUENO}/${nombre}`, url: `https://github.com/${DUENO}/${nombre}` };
+    if (rama.ok) {
+      const info = await gh(`/repos/${DUENO}/${nombre}`);
+      return { repo: `${DUENO}/${nombre}`, url: `https://github.com/${DUENO}/${nombre}`, repoId: info.datos.id };
+    }
     await new Promise((res) => setTimeout(res, 2000));
   }
   throw new Error("El repo se creó, pero la rama main no aparece todavía.");
@@ -136,16 +139,18 @@ async function nf(ruta, opciones = {}) {
 }
 
 /** Crea el sitio en Netlify ligado al repo (publica main y genera vistas previas de las propuestas). */
-export async function asegurarSitioNetlify(repo, nombre, idExistente) {
+export async function asegurarSitioNetlify(repo, repoId, nombre, idExistente, hookExistente) {
   if (idExistente) {
     const r = await nf(`/sites/${idExistente}`);
-    if (r.ok) return { id: r.datos.id, url: r.datos.ssl_url || r.datos.url };
+    if (r.ok) return { id: r.datos.id, url: r.datos.ssl_url || r.datos.url, hook: hookExistente ?? (await crearGancho(r.datos.id)) };
   }
   const r = await nf("/sites", {
     method: "POST",
     body: JSON.stringify({
       name: `pv-${nombre}`.slice(0, 63),
       repo: {
+        // Sin el id numérico del repo, Netlify no recibe los avisos de GitHub (pushes y propuestas).
+        id: repoId,
         provider: "github",
         repo,
         private: true,
@@ -157,20 +162,43 @@ export async function asegurarSitioNetlify(repo, nombre, idExistente) {
     }),
   });
   if (!r.ok) throw new Error(`Netlify no creó el sitio (${r.status}): ${r.datos?.message ?? JSON.stringify(r.datos)}`);
-  return { id: r.datos.id, url: r.datos.ssl_url || r.datos.url };
+  return { id: r.datos.id, url: r.datos.ssl_url || r.datos.url, hook: await crearGancho(r.datos.id) };
+}
+
+async function crearGancho(siteId) {
+  const r = await nf(`/sites/${siteId}/build_hooks`, { method: "POST", body: JSON.stringify({ title: "phot8can-servidor", branch: "main" }) });
+  if (!r.ok) throw new Error(`Netlify no creó el gancho de compilación (${r.status}).`);
+  return r.datos.url;
+}
+
+/**
+ * Compila una rama como vista previa (branch deploy). No dependemos de los avisos de
+ * propuestas de GitHub: el servidor le pide a Netlify compilar la rama directamente.
+ */
+export async function compilarRama(siteId, hook, rama) {
+  const sitio = await nf(`/sites/${siteId}`);
+  const permitidas = new Set([...(sitio.datos?.build_settings?.allowed_branches ?? ["main"]), rama]);
+  await nf(`/sites/${siteId}`, { method: "PATCH", body: JSON.stringify({ build_settings: { allowed_branches: [...permitidas] } }) });
+  const r = await fetch(`${hook}?trigger_branch=${encodeURIComponent(rama)}&trigger_title=${encodeURIComponent("Vista previa del agente")}`, { method: "POST", body: "{}" });
+  if (!r.ok) throw new Error(`Netlify no aceptó compilar la rama (${r.status}).`);
+}
+
+/** Compila main (respaldo por si el aviso del push no llega). */
+export async function compilarProduccion(hook) {
+  await fetch(`${hook}?trigger_title=${encodeURIComponent("Publicación aprobada")}`, { method: "POST", body: "{}" }).catch(() => {});
 }
 
 /** Busca la publicación de una propuesta (vista previa) o de producción. */
-export async function buscarPublicacion(siteId, { pr, produccion, commit }) {
+export async function buscarPublicacion(siteId, { rama, produccion, commit }) {
   const r = await nf(`/sites/${siteId}/deploys?per_page=30`);
   if (!r.ok) return null;
-  const d = (r.datos ?? []).find(
-    (x) =>
-      (produccion ? x.context === "production" : x.context === "deploy-preview" && Number(x.review_id) === Number(pr)) &&
-      (!commit || x.commit_ref === commit),
+  const candidatos = (r.datos ?? []).filter(
+    (x) => (produccion ? x.context === "production" : x.context !== "production" && x.branch === rama) && (!commit || x.commit_ref === commit),
   );
+  // Si hay una lista, esa; si no, la más reciente (en proceso o con error).
+  const d = candidatos.find((x) => x.state === "ready") ?? candidatos[0];
   if (!d) return null;
-  return { estado: d.state, url: d.links?.permalink || d.deploy_ssl_url || d.ssl_url, error: d.error_message, commit: d.commit_ref };
+  return { estado: d.state, url: d.links?.branch || d.links?.permalink || d.deploy_ssl_url || d.ssl_url, error: d.error_message, commit: d.commit_ref };
 }
 
 /* ---------------------------------------------------------------- Agente de Claude */

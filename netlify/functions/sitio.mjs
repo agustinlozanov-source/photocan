@@ -8,6 +8,8 @@ import {
   asegurarPR,
   buscarPublicacion,
   cambiarFase,
+  compilarProduccion,
+  compilarRama,
   enviarAlAgente,
   esStaff,
   estadoSesion,
@@ -46,11 +48,12 @@ async function avanzar(orgId, s) {
     if (!sha)
       return guardarSitio(orgId, { estado: "error", detalle: "El diseñador terminó sin subir la página. El equipo lo revisa.", costo_centavos_usd: costo, resumen_agente: e.resumen });
     const pr = s.pr_numero ?? (await asegurarPR(s.repo, s.rama, "Página Viva · propuesta", e.resumen || "Propuesta generada por el agente de Página Viva."));
+    await compilarRama(s.netlify_site_id, s.netlify_hook, s.rama);
     s = await guardarSitio(orgId, { pr_numero: pr, commit_revision: sha, resumen_agente: e.resumen, costo_centavos_usd: costo, estado: "revision", detalle: "Preparando tu vista previa…" });
     await cambiarFase(orgId, "revision");
   }
   if (s.estado === "revision" && s.pr_numero && s.netlify_site_id && !s.vista_previa_url) {
-    const p = await buscarPublicacion(s.netlify_site_id, { pr: s.pr_numero, commit: s.commit_revision });
+    const p = await buscarPublicacion(s.netlify_site_id, { rama: s.rama, commit: s.commit_revision });
     if (p?.estado === "ready") return guardarSitio(orgId, { vista_previa_url: p.url, detalle: "Tu página está lista para revisar." });
     if (p?.estado === "error") return guardarSitio(orgId, { detalle: `La vista previa no compiló: ${p.error ?? "error de Netlify"}. El equipo lo revisa.` });
   }
@@ -61,6 +64,10 @@ async function avanzar(orgId, s) {
       return guardarSitio(orgId, { estado: "en_linea", produccion_url: s.netlify_url, detalle: "¡Tu página está en línea!" });
     }
     if (p?.estado === "error") return guardarSitio(orgId, { detalle: `La publicación falló: ${p.error ?? "error de Netlify"}. El equipo lo revisa.` });
+    if (!p && Date.now() - new Date(s.actualizado).getTime() > 3 * 60 * 1000 && s.netlify_hook) {
+      await compilarProduccion(s.netlify_hook);
+      return guardarSitio(orgId, { detalle: "Publicando tu página… (segundo intento)" });
+    }
   }
   return s;
 }
@@ -110,6 +117,7 @@ const manejar = async (req) => {
       if (!s?.pr_numero || s.estado !== "revision" || !s.vista_previa_url) return json({ error: "Todavía no hay una vista previa lista." }, 409);
       const sha = await fusionarPR(s.repo, s.pr_numero);
       s = await guardarSitio(orgId, { estado: "publicando", commit_publicado: sha, detalle: "Publicando tu página…" });
+      // Netlify publica solo con el push a main; si no arranca, avanzar() usa el gancho de respaldo.
       return json({ sitio: publico(s) });
     }
 

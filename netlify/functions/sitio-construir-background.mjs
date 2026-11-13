@@ -34,14 +34,14 @@ const manejar = async (req) => {
 
     await guardarSitio(orgId, { estado: "preparando", detalle: "Creando tu repositorio y tu sitio…" });
     const nombre = previo?.repo?.split("/")[1] ?? nombreRepo(negocio, orgId);
-    const { repo, url } = await asegurarRepo(nombre);
-    const netlify = await asegurarSitioNetlify(repo, nombre, previo?.netlify_site_id);
-    await guardarSitio(orgId, { repo, netlify_site_id: netlify.id, netlify_url: netlify.url, detalle: "Preparando tus archivos para el diseñador…" });
+    const { repo, url, repoId } = await asegurarRepo(nombre);
+    const netlify = await asegurarSitioNetlify(repo, repoId, nombre, previo?.netlify_site_id, previo?.netlify_hook);
+    await guardarSitio(orgId, { repo, netlify_site_id: netlify.id, netlify_url: netlify.url, netlify_hook: netlify.hook, detalle: "Preparando tus archivos para el diseñador…" });
 
     const { recursos, omitidos } = await subirArchivosDelBrief(orgId);
     const ref = typeof respuestas.referencia_url === "string" && respuestas.referencia_url ? await referenciaComoArchivo(respuestas.referencia_url.split(/\s+/)[0]) : null;
     const archivos = ref ? [...recursos, ref] : recursos;
-    const rama = `pagina-viva/${new Date().toISOString().slice(0, 10)}-${Date.now().toString(36).slice(-4)}`;
+    const rama = `pagina-viva-${new Date().toISOString().slice(0, 10)}-${Date.now().toString(36).slice(-4)}`;
 
     const sesion = await iniciarSesionAgente({
       orgId,

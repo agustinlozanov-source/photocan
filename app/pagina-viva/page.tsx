@@ -7,10 +7,11 @@ import { PvConfigurador } from "@/components/pv/PvConfigurador";
 import { PvHero } from "@/components/pv/PvHero";
 import { Encabezado as Titulo, PvContraste, PvLegal, PvPreguntas, PvResultado, PvSistema } from "@/components/pv/PvSecciones";
 import { PvPortafolio } from "@/components/pv/PvPortafolio";
+import { PvContacto, PvPropiedad } from "@/components/pv/PvPropiedad";
 import { PvReels } from "@/components/pv/PvReels";
 import { PvSeguridad } from "@/components/pv/PvSeguridad";
 import { PvVolumen } from "@/components/pv/PvVolumen";
-import { Aparece, Boton, Flecha } from "@/components/ui";
+import { Aparece } from "@/components/ui";
 import { paginaViva, whatsapp } from "@/lib/content";
 import { mxn, PRECIO_BASE, totalIncluido } from "@/lib/pagina-viva";
 
@@ -65,26 +66,13 @@ export default function PaginaViva() {
         <PvPortafolio />
         <PvConfigurador />
         <PvSeguridad />
+        <PvPropiedad />
         <PvLegal />
         <PvResultado />
         <Giros />
         <PvPreguntas />
 
-        <section className="bg-black py-[8%] text-white max-md:py-24">
-          <Aparece className="contenedor">
-            <h2 className="titulo max-w-[18ch] text-[clamp(40px,6vw,96px)] leading-[0.98]">
-              Que tu página trabaje <span className="text-amarillo">aunque tú descanses.</span>
-            </h2>
-            <div className="mt-10 flex flex-wrap gap-3">
-              <Boton href="#arma-tu-proyecto" tono="amarillo">
-                Solicita tu cotización <Flecha />
-              </Boton>
-              <Boton href={whatsapp("Hola Phot8can, tengo dudas sobre Página Viva.")} tono="contorno-claro" externo>
-                Tengo dudas
-              </Boton>
-            </div>
-          </Aparece>
-        </section>
+        <PvContacto />
       </main>
       <Pie />
 

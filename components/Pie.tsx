@@ -77,7 +77,12 @@ export function Pie() {
       </div>
 
       <div className="contenedor flex flex-wrap items-center justify-between gap-4 border-t border-white/10 py-6 text-[12px] text-white/50">
-        <p>© 2026 Phot8can. Creamos. Capturamos. Conectamos.</p>
+        <p>
+          © 2026 Phot8can. Creamos. Capturamos. Conectamos. ·{" "}
+          <a href="/aviso-de-privacidad/" className="underline-offset-2 hover:text-white hover:underline">
+            Aviso de privacidad
+          </a>
+        </p>
         <a href="#inicio" className="hover:text-white">
           Volver arriba ↑
         </a>

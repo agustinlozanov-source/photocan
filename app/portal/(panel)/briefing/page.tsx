@@ -21,6 +21,7 @@ import {
 import { cargarBriefing, setBriefing, useFuenteBriefing, type FuenteBriefing } from "@/lib/briefing-fuente";
 import { useParametro } from "@/lib/portal-estado";
 import { useSesion } from "@/lib/sesion";
+import { iniciarSitio } from "@/lib/sitio-cliente";
 
 const setR = (fn: (r: Respuestas) => Respuestas) => setBriefing((b) => ({ ...b, respuestas: fn(b.respuestas) }));
 const HORARIOS = ["Mañana · 9 a 12", "Mediodía · 12 a 3", "Tarde · 3 a 6"];
@@ -598,7 +599,15 @@ function Chat({ f, alAgendar }: { f: FuenteBriefing; alAgendar: () => void }) {
             </ul>
           </details>
         </Tarjeta>
-        <BotonPortal tono={faltan.length ? "contorno" : "amarillo"} onClick={() => setBriefing((b) => ({ ...b, enviado: true }))} className="w-full !py-3.5">
+        <BotonPortal
+          tono={faltan.length ? "contorno" : "amarillo"}
+          onClick={() => {
+            setBriefing((b) => ({ ...b, enviado: true }));
+            // Con sesión real, al enviar arranca el diseñador con IA (espera a que se guarde el brief).
+            if (real) setTimeout(() => iniciarSitio().catch(() => {}), 1500);
+          }}
+          className="w-full !py-3.5"
+        >
           <IconoPortal nombre="enviar" className="size-4" />
           {faltan.length ? `Enviar así (faltan ${faltan.length})` : "Enviar mi brief"}
         </BotonPortal>
@@ -736,7 +745,7 @@ function Enviado() {
       </span>
       <h1 className="titulo mt-8 text-[clamp(30px,3.6vw,48px)] leading-[1.02]">¡Recibimos tu brief!</h1>
       <p className="mx-auto mt-4 max-w-[48ch] text-[16px] leading-relaxed text-black/60">
-        Ya empezamos a diseñar tu página. Si nos falta algo, te escribimos por WhatsApp. Puedes volver a editarlo cuando quieras.
+        Nuestro diseñador con IA ya empezó a armar tu página. Sigue el avance en tu inicio: cuando esté lista, ahí verás la vista previa para aprobarla o pedir cambios.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <BotonPortal href="/portal/">Ir al inicio</BotonPortal>

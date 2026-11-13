@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { AltaOrganizacion, Cargando } from "@/components/portal/Alta";
+import { TarjetaSitio } from "@/components/portal/TarjetaSitio";
+import { useSitio } from "@/lib/sitio-cliente";
 import { IconoPortal } from "@/components/portal/Iconos";
 import { BotonPortal, Estado, Medidor, Tarjeta, TituloTarjeta, precio } from "@/components/portal/Piezas";
 import { avanceBriefing } from "@/lib/briefing";
@@ -15,20 +17,21 @@ export default function Inicio() {
   const s = useSesion();
   if (s.estado === "cargando") return <Cargando />;
   if (s.estado === "dentro" && !s.org) return <AltaOrganizacion correo={s.usuario.correo} />;
-  if (s.estado === "dentro" && s.org) return <InicioReal nombre={s.nombre} org={s.org} contratados={s.contratados} />;
+  if (s.estado === "dentro" && s.org) return <InicioReal nombre={s.nombre} org={s.org} contratados={s.contratados} esDueno={s.rol === "dueno"} />;
   return <InicioDemo />;
 }
 
 const FASES: Organizacion["fase"][] = ["briefing", "diseno", "revision", "en_linea"];
 const ESTADO_REAL = { activo: "activo", preparacion: "preparacion", pendiente_pago: "pendiente", cancelado: "pendiente" } as const;
 
-function InicioReal({ nombre, org, contratados }: { nombre: string; org: Organizacion; contratados: ContratadoReal[] }) {
+function InicioReal({ nombre, org, contratados, esDueno }: { nombre: string; org: Organizacion; contratados: ContratadoReal[]; esDueno: boolean }) {
   const f = useFuenteBriefing();
+  const { sitio, setSitio } = useSitio(true);
   useEffect(() => {
     if (f.modo === "cargando" && f.orgId) cargarBriefing(f.orgId);
   }, [f.modo, f.orgId]);
   const avance = avanceBriefing(f.b.respuestas, f.b.archivos);
-  const etapa = FASES.indexOf(org.fase);
+  const etapa = Math.max(FASES.indexOf(org.fase), sitio?.estado === "en_linea" ? 3 : sitio?.estado === "revision" || sitio?.estado === "publicando" ? 2 : sitio ? 1 : 0);
   const primerNombre = nombre.split(/[\s._-]+/)[0];
 
   return (
@@ -40,6 +43,9 @@ function InicioReal({ nombre, org, contratados }: { nombre: string; org: Organiz
       </h1>
 
       <div className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        {sitio || f.b.enviado ? (
+          <TarjetaSitio sitio={sitio} setSitio={setSitio} esDueno={esDueno} briefEnviado={f.b.enviado} />
+        ) : (
         <Tarjeta oscura className="relative overflow-hidden">
           <div className="hero-brillo pointer-events-none absolute -top-1/2 -right-1/3 size-[520px] rounded-full opacity-50 blur-2xl" />
           <div className="relative">
@@ -69,6 +75,7 @@ function InicioReal({ nombre, org, contratados }: { nombre: string; org: Organiz
             </div>
           </div>
         </Tarjeta>
+        )}
 
         <Tarjeta>
           <TituloTarjeta icono="reloj">Tu proyecto</TituloTarjeta>

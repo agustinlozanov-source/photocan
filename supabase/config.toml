@@ -257,9 +257,9 @@ otp_expiry = 900
 
 # Correo del enlace en español. Supabase solo lo permite con SMTP propio
 # (p. ej. Resend) o en plan Pro; al configurar uno, quita los "#".
-# [auth.email.template.magic_link]
-# subject = "Tu enlace para entrar a Phot8can"
-# content_path = "./supabase/templates/enlace-magico.html"
+[auth.email.template.magic_link]
+subject = "Tu enlace para entrar a Phot8can"
+content_path = "./supabase/templates/enlace-magico.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

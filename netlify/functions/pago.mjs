@@ -50,7 +50,7 @@ const manejar = async (req) => {
     if (r.error) return json(r, 400);
     return json(r);
   } catch (e) {
-    console.error("No se pudo crear el cobro:", e);
+    console.log(`ERROR cobro: ${e?.type ?? ""} ${e?.code ?? ""} ${e?.param ?? ""} ${e?.message ?? e}`.replace(/\s+/g, " "));
     return json({ error: "No pudimos abrir el pago. Intenta de nuevo o escríbenos por WhatsApp." }, 500);
   }
 };

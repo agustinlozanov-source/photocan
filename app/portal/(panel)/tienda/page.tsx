@@ -7,6 +7,8 @@ import { Icono } from "@/components/pv/Icono";
 import { mensuales, modulos, NIVELES, type Grupo } from "@/lib/pagina-viva";
 import { basesDatos, cliente, planesCambios } from "@/lib/portal";
 import { guardar, hoy, useParametro, usePortal, type Contratado } from "@/lib/portal-estado";
+import { useSesion } from "@/lib/sesion";
+import { sb } from "@/lib/supabase";
 
 type Vista = "planes" | "base" | "complementos" | "mensuales";
 type Item = { id: string; nombre: string; tipo: Contratado["tipo"]; precio: number | null; cobro: Contratado["cobro"]; automatico: boolean };
@@ -25,6 +27,9 @@ export default function Tienda() {
   const [carrito, setCarrito] = useState<Item[]>([]);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [pago, setPago] = useState<"cerrado" | "revisar" | "procesando" | "listo">("cerrado");
+  const sesion = useSesion();
+  const real = sesion.estado === "dentro";
+  const [errorPago, setErrorPago] = useState("");
   const [verCarrito, setVerCarrito] = useState(false);
 
   const enCarrito = (id: string) => carrito.some((i) => i.id === id);
@@ -40,7 +45,31 @@ export default function Tienda() {
   const cadaMes = carrito.filter((i) => i.cobro === "mensual").reduce((s, i) => s + (i.precio ?? 0), 0);
   const porConfirmar = carrito.some((i) => i.precio === null);
 
+  /** Con sesión real, el cobro va a Stripe. Lo único y lo mensual se pagan por separado. */
+  async function pagarReal() {
+    const unicos = carrito.filter((i) => i.cobro !== "mensual");
+    const modo = unicos.length ? "unico" : "mensual";
+    const ids = (modo === "unico" ? unicos : carrito).map((i) => i.id);
+    setPago("procesando");
+    setErrorPago("");
+    try {
+      const { data } = await sb().auth.getSession();
+      const r = await fetch("/api/pago/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+        body: JSON.stringify({ modo, ids, metodo: "tarjeta", origen: "portal" }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) throw new Error(d.error || "No pudimos abrir el pago.");
+      window.location.href = d.url;
+    } catch (e) {
+      setErrorPago(e instanceof Error ? e.message : "No pudimos abrir el pago.");
+      setPago("revisar");
+    }
+  }
+
   function pagar() {
+    if (real) return pagarReal();
     setPago("procesando");
     setTimeout(() => {
       guardar((s) => {
@@ -180,7 +209,7 @@ export default function Tienda() {
                     {mensuales
                       .filter((x) => x.familia === f)
                       .map((x) => {
-                        const id = `mensual-${x.id}`;
+                        const id = x.id === "hospedaje" ? "hospedaje" : `mensual-${x.id}`;
                         const ya = contratado(id);
                         const sel = enCarrito(id);
                         return (
@@ -458,7 +487,14 @@ export default function Tienda() {
                   <IconoPortal nombre="candado" className="size-4" />
                   {pago === "procesando" ? "Procesando…" : `Pagar ${precio(hoyPagas)}`}
                 </BotonPortal>
-                <p className="mt-3 text-center text-[11px] text-black/45">Demostración: no se hace ningún cobro real.</p>
+                {errorPago && <p className="mt-3 text-center text-[13px] text-red-600">{errorPago}</p>}
+                <p className="mt-3 text-center text-[11px] text-black/45">
+                  {real
+                    ? carrito.some((i) => i.cobro === "mensual") && carrito.some((i) => i.cobro !== "mensual")
+                      ? "Primero pagas lo de pago único (con meses sin intereses). Lo mensual se activa después, en un segundo pago."
+                      : "Pagas en la página segura de Stripe. Al total se le suma el IVA."
+                    : "Demostración: no se hace ningún cobro real."}
+                </p>
               </>
             )}
           </div>

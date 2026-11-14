@@ -257,6 +257,8 @@ export function PvConfigurador() {
   const [meses, setMeses] = useState(12);
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
+  const [pagando, setPagando] = useState(false);
+  const [errorPago, setErrorPago] = useState("");
   const seccion = useRef<HTMLElement>(null);
   const [enVista, setEnVista] = useState(false);
 
@@ -528,26 +530,67 @@ export function PvConfigurador() {
                 type="email"
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                placeholder="Tu correo (para la cotización)"
+                placeholder="Tu correo (ahí te llega tu acceso)"
                 className="w-full rounded-xl border border-black/15 px-4 py-3 text-[14px] outline-none focus:border-black"
               />
             </div>
 
-            <a
-              href={whatsapp(mensaje)}
-              target="_blank"
-              rel="noopener"
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amarillo px-6 py-4 text-[15px] font-semibold text-black transition-colors hover:bg-black hover:text-white"
+            <button
+              type="button"
+              disabled={pagando}
+              onClick={async () => {
+                // Lo que lleva precio "desde" se confirma en una videollamada antes de cobrar.
+                if (porDefinir > 0) {
+                  window.open(whatsapp(mensaje), "_blank", "noopener");
+                  return;
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(correo.trim())) {
+                  setErrorPago("Escribe tu correo: ahí te llega el acceso a tu portal.");
+                  return;
+                }
+                setPagando(true);
+                setErrorPago("");
+                try {
+                  const r = await fetch("/api/pago/crear", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      modo: "unico",
+                      ids: ["pagina-viva", ...elegidos.map((m) => `modulo-${m.id}`)],
+                      codigo: codigo?.codigo,
+                      metodo,
+                      nombre,
+                      negocio: nombre,
+                      correo: correo.trim(),
+                      origen: "cotizador",
+                    }),
+                  });
+                  const d = await r.json().catch(() => ({}));
+                  // Si el cobro en línea falla de nuestro lado, que no se pierda la venta: WhatsApp.
+                  if (r.status >= 500) {
+                    window.open(whatsapp(mensaje), "_blank", "noopener");
+                    setPagando(false);
+                    return;
+                  }
+                  if (!r.ok || !d.url) throw new Error(d.error || "No pudimos abrir el pago.");
+                  window.location.href = d.url;
+                } catch (e) {
+                  setErrorPago(e instanceof Error ? e.message : "No pudimos abrir el pago.");
+                  setPagando(false);
+                }
+              }}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amarillo px-6 py-4 text-[15px] font-semibold text-black transition-colors hover:bg-black hover:text-white disabled:opacity-60"
             >
               <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
                 <rect x="5" y="10" width="14" height="10" rx="2" />
                 <path d="M8 10V7a4 4 0 0 1 8 0v3" />
               </svg>
-              Contratar ahora
+              {pagando ? "Abriendo el pago…" : porDefinir > 0 ? "Confirmar por WhatsApp" : "Contratar ahora"}
               <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
                 <path d="M3 8h10M9 4l4 4-4 4" />
               </svg>
-            </a>
+            </button>
+            {errorPago && <p className="mt-2 text-center text-[13px] text-red-600">{errorPago}</p>}
             <button
               type="button"
               onClick={() => window.print()}
@@ -559,7 +602,9 @@ export function PvConfigurador() {
               Descargar cotización en PDF
             </button>
             <p className="mt-4 text-center text-[12px] leading-relaxed text-black/50">
-              Al contratar te confirmamos por WhatsApp y te enviamos {metodo === "tarjeta" ? "tu link de pago a meses" : "los datos para transferir"}.
+              {porDefinir > 0
+                ? "Tienes complementos con precio desde: te los confirmamos por WhatsApp antes de cobrar."
+                : `Pagas en la página segura de Stripe${metodo === "tarjeta" ? ", con tus meses sin intereses" : " con los datos para transferir (SPEI)"}. Al total se le suma el IVA. Al pagar te llega a tu correo el acceso a tu portal.`}
             </p>
             <p className="mt-3 flex items-center justify-center gap-2 text-[11px] text-black/45">
               <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>

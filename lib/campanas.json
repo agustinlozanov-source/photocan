@@ -1,0 +1,13 @@
+{
+  "precioBase": 7990,
+  "iva": 0.08,
+  "etapas": [
+    {
+      "nombre": "Buen Fin",
+      "codigo": "BUENFIN",
+      "precio": 4990,
+      "hasta": "2026-11-17T23:59:59-06:00",
+      "vigencia": "Del 13 al 17 de noviembre."
+    }
+  ]
+}

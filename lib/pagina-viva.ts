@@ -1,7 +1,10 @@
 // Contenido de /pagina-viva. Todo lo que dice la página se edita aquí.
 // Los precios en `null` se muestran como "Por definir" hasta que se capturen.
 
-export const PRECIO_BASE = 7990;
+import campanas from "./campanas.json";
+
+/** Precio y campañas viven en campanas.json para que el servidor de cobro use exactamente los mismos. */
+export const PRECIO_BASE = campanas.precioBase;
 
 export const mxn = (n: number) =>
   n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
@@ -10,15 +13,7 @@ export const mxn = (n: number) =>
  * Precios por fecha (hora del centro de México, UTC−6). Se usa la primera etapa vigente;
  * cuando todas vencen, rige PRECIO_BASE. Para una nueva campaña, agrega una etapa aquí.
  */
-export const etapas = [
-  {
-    nombre: "Buen Fin",
-    codigo: "BUENFIN",
-    precio: 4990,
-    hasta: "2026-11-17T23:59:59-06:00",
-    vigencia: "Del 13 al 17 de noviembre.",
-  },
-];
+export const etapas = campanas.etapas;
 
 export type Etapa = (typeof etapas)[number];
 

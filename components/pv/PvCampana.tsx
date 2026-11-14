@@ -55,7 +55,7 @@ export function PvCampana() {
               )}
               <p className="titulo flex items-baseline gap-3 leading-[0.85]">
                 <span className="text-[clamp(72px,10vw,168px)] tracking-[-0.06em]">{mxn(precio)}</span>
-                <span className="text-[clamp(20px,2.2vw,36px)]">MXN</span>
+                <span className="text-[clamp(20px,2.2vw,36px)]">MXN + IVA</span>
               </p>
               {etapa && <p className="mt-4 text-[clamp(15px,1.2vw,18px)] font-semibold">{vigencia}</p>}
               {etapa && (

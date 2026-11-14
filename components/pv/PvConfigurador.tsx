@@ -467,7 +467,7 @@ export function PvConfigurador() {
             </div>
             <p className="mt-1 text-right text-[12px] text-black/50">
               {pagos.notaPrecio}
-              {porDefinir > 0 && ` · + ${porDefinir} por definir`}
+              {porDefinir > 0 && ` · incluye ${porDefinir} precio(s) desde`}
             </p>
 
             <p className="mt-6 text-[12px] font-semibold tracking-wide text-black/40 uppercase">Forma de pago</p>

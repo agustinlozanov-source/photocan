@@ -78,7 +78,9 @@ export default function Tienda() {
 
   return (
     <div className="mx-auto max-w-[1280px]">
-      <Encabezado etiqueta="Tienda" titulo={<>Haz crecer tu página <span className="text-black/35">cuando quieras.</span></>} />
+      <Encabezado etiqueta="Tienda" titulo={<>Haz crecer tu página <span className="text-black/35">cuando quieras.</span></>}>
+        <p className="text-[13px] font-semibold text-black/50">Precios en pesos mexicanos, más IVA.</p>
+      </Encabezado>
 
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
         {pestañas.map((p) => (
@@ -517,7 +519,7 @@ function Carrito({
               <dd className="tabular-nums">{precio(cadaMes)}</dd>
             </div>
           </dl>
-          {porConfirmar && <p className="mt-2 text-[11px] text-black/45">Incluye precios por definir; se confirman antes de cobrarse.</p>}
+          <p className="mt-2 text-[11px] text-black/45">Precios más IVA.{porConfirmar ? " Incluye precios por confirmar antes de cobrarse." : ""}</p>
           <BotonPortal tono="amarillo" className="mt-5 w-full" onClick={alPagar}>
             <IconoPortal nombre="candado" className="size-4" /> Pagar
           </BotonPortal>

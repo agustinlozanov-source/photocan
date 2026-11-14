@@ -18,7 +18,7 @@ import { mxn, PRECIO_BASE, totalIncluido } from "@/lib/pagina-viva";
 
 export const metadata: Metadata = {
   title: "Página Viva · Phot8can",
-  description: `Una página web que interpreta tu negocio: conectada, medida, indexada y en regla. ${totalIncluido} funciones por un solo precio de ${mxn(PRECIO_BASE)}.`,
+  description: `Una página web que interpreta tu negocio: conectada, medida, indexada y en regla. ${totalIncluido} funciones por un solo precio de ${mxn(PRECIO_BASE)} más IVA.`,
 };
 
 function Giros() {

@@ -770,7 +770,7 @@ export const mensuales: {
 
 /** Formas de pago. TODO: conectar el cobro con tarjeta (Stripe) y la nota de IVA. */
 export const pagos = {
-  notaPrecio: "MXN", // p. ej. "MXN más IVA"
+  notaPrecio: "MXN más IVA",
   meses: [3, 6, 9, 12],
   vigenciaDias: 7,
 };

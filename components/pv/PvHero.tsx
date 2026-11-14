@@ -69,7 +69,7 @@ function Precio() {
       )}
       <p className="titulo mt-1 flex items-baseline gap-3 leading-[0.9]">
         <span className="text-[clamp(64px,8vw,128px)] tracking-[-0.05em] text-amarillo">{mxn(precio)}</span>
-        <span className="text-[clamp(18px,1.8vw,28px)]">MXN</span>
+        <span className="text-[clamp(18px,1.8vw,28px)]">MXN + IVA</span>
       </p>
       <p className="mt-3 text-[clamp(14px,1.1vw,16px)] font-semibold text-white/80">
         {etapa ? vigencia : "Pago único. Módulos opcionales aparte."}

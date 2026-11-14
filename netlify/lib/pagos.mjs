@@ -127,14 +127,16 @@ export async function crearCobro({ modo, ids, codigo, metodo, nombre, correo, ne
     success_url: `${base}/pago/listo/?sesion={CHECKOUT_SESSION_ID}`,
     cancel_url: regreso,
     metadata: { pago_id: pago.id, modo },
+    // Los métodos de pago se activan en el panel de Stripe (Settings → Payment methods); aquí solo
+    // se configuran: meses sin intereses en tarjeta y SPEI para transferencia.
     ...(modo === "unico"
-      ? metodo === "transferencia"
-        ? {
-            payment_method_types: ["customer_balance"],
-            payment_method_options: { customer_balance: { funding_type: "bank_transfer", bank_transfer: { type: "mx_bank_transfer" } } },
-          }
-        : { payment_method_types: ["card"], payment_method_options: { card: { installments: { enabled: true } } } }
-      : { payment_method_types: ["card"], subscription_data: { metadata: { pago_id: pago.id } } }),
+      ? {
+          payment_method_options: {
+            card: { installments: { enabled: true } },
+            customer_balance: { funding_type: "bank_transfer", bank_transfer: { type: "mx_bank_transfer" } },
+          },
+        }
+      : { subscription_data: { metadata: { pago_id: pago.id } } }),
   });
 
   await admin().from("pagos").update({ stripe_sesion_id: sesion.id, stripe_cliente_id: cliente.id }).eq("id", pago.id);

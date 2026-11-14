@@ -51,7 +51,9 @@ const manejar = async (req) => {
     return json(r);
   } catch (e) {
     console.log(`ERROR cobro: ${e?.type ?? ""} ${e?.code ?? ""} ${e?.param ?? ""} ${e?.message ?? e}`.replace(/\s+/g, " "));
-    return json({ error: "No pudimos abrir el pago. Intenta de nuevo o escríbenos por WhatsApp." }, 500);
+    // El detalle técnico ayuda a diagnosticar; nunca trae llaves (Stripe no las devuelve en sus errores).
+    const detalle = `${e?.type ?? ""} ${e?.code ?? ""} ${e?.param ?? ""} ${e?.message ?? ""}`.replace(/(sk|rk)_(live|test)_\w+/g, "[llave]").trim().slice(0, 300);
+    return json({ error: "No pudimos abrir el pago. Intenta de nuevo o escríbenos por WhatsApp.", detalle }, 500);
   }
 };
 

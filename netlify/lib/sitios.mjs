@@ -183,9 +183,10 @@ export async function compilarRama(siteId, hook, rama) {
   if (!r.ok) throw new Error(`Netlify no aceptó compilar la rama (${r.status}).`);
 }
 
-/** Compila main (respaldo por si el aviso del push no llega). */
-export async function compilarProduccion(hook) {
-  await fetch(`${hook}?trigger_title=${encodeURIComponent("Publicación aprobada")}`, { method: "POST", body: "{}" }).catch(() => {});
+/** Compila main y la publica. No dependemos del aviso de GitHub, que a veces no llega a Netlify. */
+export async function compilarProduccion(siteId) {
+  const r = await nf(`/sites/${siteId}/builds`, { method: "POST", body: "{}" });
+  if (!r.ok) throw new Error(`Netlify no arrancó la publicación (${r.status}).`);
 }
 
 /** Busca la publicación de una propuesta (vista previa) o de producción. */

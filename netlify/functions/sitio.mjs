@@ -64,8 +64,8 @@ async function avanzar(orgId, s) {
       return guardarSitio(orgId, { estado: "en_linea", produccion_url: s.netlify_url, detalle: "¡Tu página está en línea!" });
     }
     if (p?.estado === "error") return guardarSitio(orgId, { detalle: `La publicación falló: ${p.error ?? "error de Netlify"}. El equipo lo revisa.` });
-    if (!p && Date.now() - new Date(s.actualizado).getTime() > 3 * 60 * 1000 && s.netlify_hook) {
-      await compilarProduccion(s.netlify_hook);
+    if (!p && Date.now() - new Date(s.actualizado).getTime() > 3 * 60 * 1000) {
+      await compilarProduccion(s.netlify_site_id);
       return guardarSitio(orgId, { detalle: "Publicando tu página… (segundo intento)" });
     }
   }
@@ -117,7 +117,7 @@ const manejar = async (req) => {
       if (!s?.pr_numero || s.estado !== "revision" || !s.vista_previa_url) return json({ error: "Todavía no hay una vista previa lista." }, 409);
       const sha = await fusionarPR(s.repo, s.pr_numero);
       s = await guardarSitio(orgId, { estado: "publicando", commit_publicado: sha, detalle: "Publicando tu página…" });
-      // Netlify publica solo con el push a main; si no arranca, avanzar() usa el gancho de respaldo.
+      await compilarProduccion(s.netlify_site_id);
       return json({ sitio: publico(s) });
     }
 

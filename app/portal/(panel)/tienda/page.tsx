@@ -4,22 +4,24 @@ import { useState } from "react";
 import { IconoPortal } from "@/components/portal/Iconos";
 import { BotonPortal, Encabezado, Estado, Tarjeta, precio } from "@/components/portal/Piezas";
 import { Icono } from "@/components/pv/Icono";
-import { modulos } from "@/lib/pagina-viva";
+import { mensuales, modulos, NIVELES, type Grupo } from "@/lib/pagina-viva";
 import { basesDatos, cliente, planesCambios } from "@/lib/portal";
 import { guardar, hoy, useParametro, usePortal, type Contratado } from "@/lib/portal-estado";
 
-type Vista = "planes" | "base" | "complementos";
+type Vista = "planes" | "base" | "complementos" | "mensuales";
 type Item = { id: string; nombre: string; tipo: Contratado["tipo"]; precio: number | null; cobro: Contratado["cobro"]; automatico: boolean };
 
 /** Complementos que se activan solos; el resto los prepara el equipo. */
 const AUTOMATICOS = new Set(["citas", "ingles", "paginas"]);
-const complementos = modulos.filter((m) => m.id !== "cuidado");
+const complementos = modulos;
+const FAMILIAS = { agentes: "Agentes con IA", marketing: "Marketing", operacion: "Operación" } as const;
+const etiqueta = (m: (typeof modulos)[number]) => (m.precio === 0 ? "Sin costo" : `${m.desde ? "Desde " : ""}${precio(m.precio)}`);
 
 export default function Tienda() {
   const e = usePortal();
   const param = useParametro("vista") as Vista | null;
   const [tab, setTab] = useState<Vista | null>(null);
-  const vista: Vista = tab ?? (param && ["planes", "base", "complementos"].includes(param) ? param : "complementos");
+  const vista: Vista = tab ?? (param && ["planes", "base", "complementos", "mensuales"].includes(param) ? param : "complementos");
   const [carrito, setCarrito] = useState<Item[]>([]);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [pago, setPago] = useState<"cerrado" | "revisar" | "procesando" | "listo">("cerrado");
@@ -69,6 +71,7 @@ export default function Tienda() {
 
   const pestañas: { id: Vista; texto: string; icono: Parameters<typeof IconoPortal>[0]["nombre"] }[] = [
     { id: "complementos", texto: "Complementos", icono: "tienda" },
+    { id: "mensuales", texto: "Agentes y marketing", icono: "rayo" },
     { id: "planes", texto: "Planes de cambios", icono: "chat" },
     { id: "base", texto: "Base de datos", icono: "base" },
   ];
@@ -95,8 +98,18 @@ export default function Tienda() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
           {vista === "complementos" && (
+            <div className="space-y-8">
+              {(Object.keys(NIVELES) as Grupo[]).map((g) => (
+                <div key={g}>
+                  <div className="mb-3 flex flex-wrap items-baseline gap-x-3 px-1">
+                    <h2 className="text-[17px] font-bold">{NIVELES[g].nombre}</h2>
+                    <span className="text-[13px] font-bold text-black/50">
+                      {NIVELES[g].precio === null ? "Precio por pieza" : NIVELES[g].precio === 0 ? "Sin costo" : `${g === "nivel-4" ? "Desde " : ""}${precio(NIVELES[g].precio)} c/u`}
+                    </span>
+                    <span className="text-[12px] text-black/45">{NIVELES[g].texto}</span>
+                  </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {complementos.map((m) => {
+              {complementos.filter((m) => m.grupo === g).map((m) => {
                 const id = `modulo-${m.id}`;
                 const ya = contratado(id);
                 const sel = enCarrito(id);
@@ -111,9 +124,9 @@ export default function Tienda() {
                         <p className="mt-1 text-[13px] text-black/55">{m.resumen}</p>
                       </div>
                     </div>
-                    <button onClick={() => setAbierto(abierto === m.id ? null : m.id)} className="mt-3 self-start text-[12px] font-bold text-black/60 hover:text-black">
+                    {m.que && <button onClick={() => setAbierto(abierto === m.id ? null : m.id)} className="mt-3 self-start text-[12px] font-bold text-black/60 hover:text-black">
                       {abierto === m.id ? "Menos detalles ↑" : "¿Qué es y para qué sirve? ↓"}
-                    </button>
+                    </button>}
                     {abierto === m.id && (
                       <dl className="mt-3 space-y-3 rounded-2xl bg-humo p-4 text-[13px] leading-relaxed">
                         {[
@@ -130,7 +143,7 @@ export default function Tienda() {
                     )}
                     <div className="mt-auto flex items-center justify-between gap-3 pt-5">
                       <div>
-                        <p className="text-[15px] font-bold">{precio(m.precio)}</p>
+                        <p className="text-[15px] font-bold">{etiqueta(m)}</p>
                         <p className="text-[11px] text-black/45">{AUTOMATICOS.has(m.id) ? "Se activa al pagar" : "Lo prepara el equipo"}</p>
                       </div>
                       {ya ? (
@@ -150,6 +163,52 @@ export default function Tienda() {
                   </Tarjeta>
                 );
               })}
+            </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {vista === "mensuales" && (
+            <div className="space-y-8">
+              {(Object.keys(FAMILIAS) as (keyof typeof FAMILIAS)[]).map((f) => (
+                <div key={f}>
+                  <h2 className="mb-3 px-1 text-[17px] font-bold">{FAMILIAS[f]}</h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {mensuales
+                      .filter((x) => x.familia === f)
+                      .map((x) => {
+                        const id = `mensual-${x.id}`;
+                        const ya = contratado(id);
+                        const sel = enCarrito(id);
+                        return (
+                          <Tarjeta key={x.id} className={`flex flex-col ${sel ? "!border-black" : ""}`}>
+                            <h3 className="text-[15px] leading-snug font-bold">{x.nombre}</h3>
+                            <p className="mt-1 text-[13px] text-black/55">{x.nota}</p>
+                            <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                              <p className="text-[15px] font-bold">{x.precio === null ? "Se cotiza" : `${precio(x.precio)} / mes`}</p>
+                              {ya ? (
+                                <Estado estado={ya.estado} />
+                              ) : x.precio === null ? (
+                                <BotonPortal tono="contorno" className="!py-2.5" href="/portal/cambios/?equipo=1">
+                                  Pedir cotización
+                                </BotonPortal>
+                              ) : (
+                                <BotonPortal
+                                  tono={sel ? "amarillo" : "negro"}
+                                  className="!py-2.5"
+                                  onClick={() => agregar({ id, nombre: x.nombre, tipo: "complemento", precio: x.precio, cobro: "mensual", automatico: f === "operacion" })}
+                                >
+                                  {sel ? "✓ En tu carrito" : "Agregar"}
+                                </BotonPortal>
+                              )}
+                            </div>
+                          </Tarjeta>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

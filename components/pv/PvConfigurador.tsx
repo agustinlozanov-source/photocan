@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { whatsapp } from "@/lib/content";
-import { incluido, modulos, mxn, pagos, totalIncluido, validarCodigo, type Etapa } from "@/lib/pagina-viva";
+import { incluido, modulos, mxn, NIVELES, pagos, totalIncluido, validarCodigo, type Etapa, type Grupo } from "@/lib/pagina-viva";
+
+const precioDe = (m: (typeof modulos)[number], suma = false) =>
+  m.precio === 0 ? "Sin costo" : `${m.desde ? "Desde " : suma ? "+ " : ""}${mxn(m.precio)}`;
 import { usePrecio } from "@/lib/precio";
 import { Aparece } from "../ui";
 import { Icono } from "./Icono";
@@ -84,13 +87,11 @@ function Modulo({
           <span className="min-w-0">
             <span className="block text-[15.5px] leading-tight font-semibold">{m.nombre}</span>
             <span className="mt-1 block text-[13px] leading-snug text-gris">{m.resumen}</span>
-            <span className={`mt-1.5 block text-[12px] font-semibold sm:hidden ${m.precio == null ? "text-black/40" : ""}`}>
-              {m.precio == null ? "Por definir" : `+ ${mxn(m.precio)}`}
-            </span>
+            <span className={`mt-1.5 block text-[12px] font-semibold sm:hidden ${m.precio === 0 ? "text-black/50" : ""}`}>{precioDe(m, true)}</span>
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-3 pl-2">
-            <span className={`text-right text-[13px] font-semibold whitespace-nowrap max-sm:hidden ${m.precio == null ? "text-black/40" : ""}`}>
-              {m.precio == null ? "Por definir" : `+ ${mxn(m.precio)}`}
+            <span className={`text-right text-[13px] font-semibold whitespace-nowrap max-sm:hidden ${m.precio === 0 ? "text-black/50" : ""}`}>
+              {precioDe(m, true)}
             </span>
             <Chevron abierto={abierto} />
           </span>
@@ -108,12 +109,15 @@ function Modulo({
       </div>
       <div className={`grid transition-[grid-template-rows] duration-400 ease-out ${abierto ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
-          <div className="grid gap-5 border-t border-black/8 px-5 py-5 sm:pl-[76px] xl:grid-cols-3">
-            {[
-              ["Qué es", m.que],
-              ["Para qué sirve", m.para],
-              ["Impacto", m.impacto],
-            ].map(([t, d]) => (
+          <div className={`grid gap-5 border-t border-black/8 px-5 py-5 sm:pl-[76px] ${m.que ? "xl:grid-cols-3" : ""}`}>
+            {(m.que
+              ? [
+                  ["Qué es", m.que],
+                  ["Para qué sirve", m.para],
+                  ["Impacto", m.impacto],
+                ]
+              : [["Qué es", `${m.resumen}${m.desde ? " El precio es desde: se confirma según tu negocio en una videollamada." : ""}`]]
+            ).map(([t, d]) => (
               <div key={t}>
                 <p className="text-[11px] font-semibold tracking-wide text-black/40 uppercase">{t}</p>
                 <p className="mt-1.5 text-[14px] leading-relaxed">{d}</p>
@@ -208,9 +212,9 @@ function Cotizacion({
             <tr key={m.id} className="border-b border-black/10">
               <td className="py-3">
                 <p className="font-semibold">{m.nombre}</p>
-                <p className="text-black/60">{m.que}</p>
+                <p className="text-black/60">{m.que ?? m.resumen}</p>
               </td>
-              <td className="py-3 text-right align-top">{m.precio == null ? "Por definir" : mxn(m.precio)}</td>
+              <td className="py-3 text-right align-top">{precioDe(m)}</td>
             </tr>
           ))}
         </tbody>
@@ -221,7 +225,7 @@ function Cotizacion({
           <span>{mxn(total)}</span>
         </div>
         <p className="mt-1 text-right text-black/50">{pagos.notaPrecio}</p>
-        {porDefinir > 0 && <p className="mt-2 text-right text-black/60">+ {porDefinir} módulo(s) por definir</p>}
+        {porDefinir > 0 && <p className="mt-2 text-right text-black/60">Incluye {porDefinir} complemento(s) con precio desde, a confirmar.</p>}
         <p className="mt-4">
           Forma de pago:{" "}
           <b>{metodo === "transferencia" ? "Transferencia" : `Tarjeta, ${meses} meses sin intereses de ${mxn(Math.ceil(total / meses))}`}</b>
@@ -280,8 +284,9 @@ export function PvConfigurador() {
   };
 
   const elegidos = useMemo(() => modulos.filter((m) => sel.includes(m.id)), [sel]);
-  const total = regular - descuento + elegidos.reduce((n, m) => n + (m.precio ?? 0), 0);
-  const porDefinir = elegidos.filter((m) => m.precio == null).length;
+  const total = regular - descuento + elegidos.reduce((n, m) => n + m.precio, 0);
+  const porDefinir = elegidos.filter((m) => m.desde).length;
+  const [abiertos, setAbiertos] = useState<Grupo[]>(["nivel-1", "nivel-2"]);
   const mensual = Math.ceil(total / meses);
 
   const alternar = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -291,9 +296,9 @@ export function PvConfigurador() {
     "",
     `• Página Viva: ${mxn(regular)}`,
     ...(codigo ? [`• Código ${codigo.codigo}: −${mxn(descuento)}`] : []),
-    ...elegidos.map((m) => `• ${m.nombre}: ${m.precio == null ? "por definir" : mxn(m.precio)}`),
+    ...elegidos.map((m) => `• ${m.nombre}: ${precioDe(m).toLowerCase()}`),
     "",
-    `Total: ${mxn(total)} ${pagos.notaPrecio}${porDefinir ? ` + ${porDefinir} módulo(s) por definir` : ""}`,
+    `Total: ${mxn(total)} ${pagos.notaPrecio}${porDefinir ? ` (incluye ${porDefinir} precio(s) desde, a confirmar)` : ""}`,
     `Pago: ${metodo === "transferencia" ? "transferencia" : `tarjeta a ${meses} meses sin intereses`}`,
     ...(nombre ? [`Nombre: ${nombre}`] : []),
     ...(correo ? [`Correo: ${correo}`] : []),
@@ -308,8 +313,8 @@ export function PvConfigurador() {
             <h2 className="titulo mt-4 max-w-[16ch] text-[clamp(34px,4.4vw,68px)] leading-[1.02]">Un precio. Todo lo importante adentro.</h2>
           </div>
           <p className="max-w-[44ch] text-[clamp(15px,1.15vw,18px)] leading-relaxed text-gris">
-            Tu Página Viva ya trae {totalIncluido} funciones. Si tu negocio necesita más, súmale módulos con precio fijo, cotiza
-            al momento y contrata desde aquí.
+            Tu Página Viva ya trae {totalIncluido} funciones. Si tu negocio necesita más, súmale complementos: los simples van sin
+            costo y el resto tiene un precio fijo según su complejidad.
           </p>
         </Aparece>
 
@@ -320,18 +325,51 @@ export function PvConfigurador() {
             <div>
               <div className="flex flex-wrap items-end justify-between gap-4 px-1">
                 <div>
-                  <h3 className="titulo text-[clamp(24px,2.2vw,34px)] leading-tight">Súmale módulos</h3>
+                  <h3 className="titulo text-[clamp(24px,2.2vw,34px)] leading-tight">Súmale complementos</h3>
                   <p className="mt-1 text-[14px] text-gris">Toca cualquiera para ver qué es, para qué sirve y qué impacto tiene.</p>
                 </div>
                 <span className="text-[13px] text-black/50">
                   {sel.length} de {modulos.length} agregados
                 </span>
               </div>
-              <ul className="mt-5 space-y-2.5">
-                {modulos.map((m) => (
-                  <Modulo key={m.id} m={m} agregado={sel.includes(m.id)} alternar={() => alternar(m.id)} />
-                ))}
-              </ul>
+              <div className="mt-5 space-y-4">
+                {(Object.keys(NIVELES) as Grupo[]).map((g) => {
+                  const lista = modulos.filter((m) => m.grupo === g);
+                  const abierto = abiertos.includes(g);
+                  const nivel = NIVELES[g];
+                  const enGrupo = lista.filter((m) => sel.includes(m.id)).length;
+                  return (
+                    <div key={g}>
+                      <button
+                        type="button"
+                        onClick={() => setAbiertos((a) => (a.includes(g) ? a.filter((x) => x !== g) : [...a, g]))}
+                        aria-expanded={abierto}
+                        className="flex w-full items-center gap-4 rounded-2xl bg-black px-5 py-4 text-left text-white"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-baseline gap-x-3">
+                            <span className="text-[16px] font-bold">{nivel.nombre}</span>
+                            <span className="text-[13px] font-bold text-amarillo">
+                              {nivel.precio === null ? "Precio por pieza" : nivel.precio === 0 ? "Sin costo" : `${g === "nivel-4" ? "Desde " : ""}${mxn(nivel.precio)} c/u`}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 block text-[12px] text-white/55">
+                            {nivel.texto} · {lista.length} opciones{enGrupo ? ` · ${enGrupo} agregado(s)` : ""}
+                          </span>
+                        </span>
+                        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-[18px]">{abierto ? "−" : "+"}</span>
+                      </button>
+                      {abierto && (
+                        <ul className="mt-2.5 space-y-2.5">
+                          {lista.map((m) => (
+                            <Modulo key={m.id} m={m} agregado={sel.includes(m.id)} alternar={() => alternar(m.id)} />
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -367,10 +405,10 @@ export function PvConfigurador() {
                     </button>
                     <span className="truncate">{m.nombre}</span>
                   </span>
-                  <span className={`shrink-0 ${m.precio == null ? "text-black/40" : ""}`}>{m.precio == null ? "Por definir" : mxn(m.precio)}</span>
+                  <span className={`shrink-0 ${m.precio === 0 ? "text-black/50" : ""}`}>{precioDe(m)}</span>
                 </li>
               ))}
-              {elegidos.length === 0 && <li className="text-[13px] text-black/40">Sin módulos extra. Ya trae todo lo esencial.</li>}
+              {elegidos.length === 0 && <li className="text-[13px] text-black/40">Sin complementos extra. Ya trae todo lo esencial.</li>}
             </ul>
 
             {!codigo && (

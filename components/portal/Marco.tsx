@@ -11,6 +11,7 @@ import { IconoPortal, type IconoPortalNombre } from "./Iconos";
 const NAV: { href: string; texto: string; icono: IconoPortalNombre; movil?: boolean }[] = [
   { href: "/portal/", texto: "Inicio", icono: "inicio", movil: true },
   { href: "/portal/briefing/", texto: "Briefing", icono: "briefing", movil: true },
+  { href: "/portal/disenos/", texto: "Diseños", icono: "diseno" },
   { href: "/portal/cambios/", texto: "Cambios con IA", icono: "chat", movil: true },
   { href: "/portal/tienda/", texto: "Tienda", icono: "tienda", movil: true },
   { href: "/portal/expediente/", texto: "Mi página", icono: "expediente" },

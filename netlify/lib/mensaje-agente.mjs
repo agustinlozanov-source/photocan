@@ -40,6 +40,33 @@ const ETIQUETAS = {
   notas: "Notas extra que dio el cliente",
 };
 
+const DISENOS = {
+  serena: "Serena (salud y bienestar: claro, serif con cursivas, arcos, tarjetas que se apilan)",
+  sazon: "Sazón (comida: oscuro y cálido, tipografía enorme, bandas que se mueven, grano)",
+  criterio: "Criterio (servicios profesionales: editorial, serif, retícula, listas numeradas)",
+};
+
+/** Qué diseño usar según lo que eligió el cliente en el portal (respuestas.plantilla). */
+function seccionDiseno(eleccion, hayReferencia) {
+  const lista = Object.entries(DISENOS).map(([id, d]) => `- \`${id}\`: ${d}`).join("\n");
+  if (DISENOS[eleccion])
+    return `## Diseño elegido por el cliente
+Eligió **${DISENOS[eleccion]}**. Pon \`"plantilla": "${eleccion}"\` en contenido/sitio.json y construye sobre plantillas/${eleccion}/:
+respeta su estructura, ritmo y efectos, y vístelo con la marca del cliente (colores, fuentes, logo, fotos, textos).
+Ajusta los títulos de sección de la plantilla al giro del cliente si hace falta.`;
+  if (eleccion === "referencia" || hayReferencia)
+    return `## Diseño
+El cliente quiere parecerse a su página de referencia. Elige el diseño de la plantilla que más se le acerque y adáptalo a ese estilo:
+${lista}
+- \`base\`: sencillo, si ninguno encaja.
+Pon el elegido en \`"plantilla"\` de contenido/sitio.json y dilo en tu resumen.`;
+  return `## Diseño
+El cliente dejó el diseño en nuestras manos. Elige el que mejor le quede a su giro y a su cliente:
+${lista}
+- \`base\`: sencillo, si ninguno encaja.
+Pon el elegido en \`"plantilla"\` de contenido/sitio.json y explica en tu resumen por qué.`;
+}
+
 const valor = (v) => (Array.isArray(v) ? v.join(", ") : String(v ?? "")).trim();
 
 export function encargo({ negocio, respuestas, archivos, omitidos, hayReferencia, rama }) {
@@ -75,6 +102,7 @@ ${
     ? `Están en /mnt/session/uploads/brief/ (solo lectura):\n${archivos.map((a) => `- ${a.mount_path.replace("/brief/", "")}`).join("\n")}\nCopia a public/img/ los que uses (logo, fotos). Usa el logo si lo hay.`
     : "No subió archivos: usa los recuadros de color de la plantilla donde irían fotos y repórtalo."
 }${omitidos.length ? `\nNo se pudieron adjuntar (muy pesados): ${omitidos.join(", ")}.` : ""}
+${seccionDiseno(String(r.plantilla ?? ""), hayReferencia)}
 ${hayReferencia ? "\n## Página de referencia\nEl HTML (sin scripts) está en /mnt/session/uploads/brief/referencia.html. Estudia su estructura, ritmo, tipografía y paleta para inspirarte; no copies textos, imágenes ni marcas.\n" : ""}
 ## Cómo entregar
 1. El repo está en /workspace/sitio. Lee CLAUDE.md.

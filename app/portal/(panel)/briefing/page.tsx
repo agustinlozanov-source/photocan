@@ -19,6 +19,7 @@ import {
   type Respuestas,
 } from "@/lib/briefing";
 import { cargarBriefing, setBriefing, useFuenteBriefing, type FuenteBriefing } from "@/lib/briefing-fuente";
+import { POR_REFERENCIA, PROPUESTA, disenoPorId } from "@/lib/disenos";
 import { useParametro } from "@/lib/portal-estado";
 import { useSesion } from "@/lib/sesion";
 import { iniciarSitio } from "@/lib/sitio-cliente";
@@ -117,8 +118,33 @@ function Clics({ f, alAgendar }: { f: FuenteBriefing; alAgendar: () => void }) {
     setR((x) => ({ ...x, [p.id]: nuevo }));
   };
 
+  const diseno = disenoPorId(r.plantilla);
   return (
     <div className="mx-auto max-w-[860px]">
+      <a
+        href="/portal/disenos/"
+        className="mb-6 flex items-center gap-3 rounded-[18px] border border-black/[0.07] bg-white px-4 py-3 text-[13px] transition-colors hover:border-black/20"
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-humo">
+          <IconoPortal nombre="diseno" className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          {diseno ? (
+            <>
+              <b>Diseño elegido: {diseno.nombre}.</b> <span className="text-black/55">{diseno.lema}.</span>
+            </>
+          ) : r.plantilla === POR_REFERENCIA ? (
+            <b>Usaremos tu página de referencia como guía de diseño.</b>
+          ) : r.plantilla === PROPUESTA ? (
+            <b>Phot8can propondrá el diseño.</b>
+          ) : (
+            <>
+              <b>Elige el diseño de tu página.</b> <span className="text-black/55">Mira los demos en vivo.</span>
+            </>
+          )}
+        </span>
+        <span className="shrink-0 font-bold text-black/55">{r.plantilla ? "Cambiar" : "Ver diseños"} →</span>
+      </a>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="etiqueta text-[11px] text-black/45">
           Brief · {i + 1} de {visibles.length}

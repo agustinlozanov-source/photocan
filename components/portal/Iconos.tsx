@@ -37,6 +37,12 @@ const RUTAS = {
       <path d="M3 10h18M7 15h4" />
     </>
   ),
+  diseno: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <path d="M3 9h18M9 9v11" />
+    </>
+  ),
   salir: <path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" />,
   mic: (
     <>

@@ -7,6 +7,7 @@ import { PvConfigurador } from "@/components/pv/PvConfigurador";
 import { PvHero } from "@/components/pv/PvHero";
 import { Encabezado as Titulo, PvContraste, PvLegal, PvPreguntas, PvResultado, PvSistema } from "@/components/pv/PvSecciones";
 import { PvPortafolio } from "@/components/pv/PvPortafolio";
+import { PvPortal } from "@/components/pv/PvPortal";
 import { PvContacto, PvPropiedad } from "@/components/pv/PvPropiedad";
 import { PvReels } from "@/components/pv/PvReels";
 import { PvSeguridad } from "@/components/pv/PvSeguridad";
@@ -67,6 +68,7 @@ export default function PaginaViva() {
         <PvConfigurador />
         <PvSeguridad />
         <PvPropiedad />
+        <PvPortal />
         <PvLegal />
         <PvResultado />
         <Giros />

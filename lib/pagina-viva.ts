@@ -1,7 +1,7 @@
 // Contenido de /pagina-viva. Todo lo que dice la página se edita aquí.
 // Los precios en `null` se muestran como "Por definir" hasta que se capturen.
 
-export const PRECIO_BASE = 17000;
+export const PRECIO_BASE = 7990;
 
 export const mxn = (n: number) =>
   n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
@@ -14,16 +14,9 @@ export const etapas = [
   {
     nombre: "Buen Fin",
     codigo: "BUENFIN",
-    precio: 11900,
+    precio: 4990,
     hasta: "2026-11-17T23:59:59-06:00",
     vigencia: "Del 13 al 17 de noviembre.",
-  },
-  {
-    nombre: "Precio de lanzamiento",
-    codigo: "PAGINAVIVA",
-    precio: 14450,
-    hasta: "2026-12-11T23:59:59-06:00",
-    vigencia: "Hasta el 11 de diciembre.",
   },
 ];
 
@@ -51,7 +44,7 @@ export function validarCodigo(texto: string, ahora: number): { ok: true; etapa: 
   return { ok: false, motivo: "Ese código no existe." };
 }
 
-/** Texto completo de vigencia: "Del 13 al 17 de noviembre. Después, $14,450 hasta el 11 de diciembre." */
+/** Texto completo de vigencia, p. ej. "Del 13 al 17 de noviembre." (con varias etapas, menciona la siguiente). */
 export function textoVigencia(i: number) {
   if (i < 0) return "";
   const sig = etapas[i + 1];
@@ -210,7 +203,7 @@ export const incluido: { categoria: string; icono: IconoNombre; items: string[] 
       "Reporte mensual de resultados",
       "3 actualizaciones de temporada al año",
       "Respaldos automáticos",
-      "Entrega en 10 días hábiles",
+      "Lista en una semana desde tu brief",
     ],
   },
 ];
@@ -383,7 +376,7 @@ export const preguntas = [
   },
   {
     p: "¿En cuánto tiempo está lista?",
-    r: "En 10 días hábiles desde que tenemos tu material completo: logo, servicios con precio, preguntas frecuentes, fotos y datos de contacto.",
+    r: "En máximo una semana desde que terminas tu brief, muchas veces antes. El brief se llena en unos 20 minutos desde tu portal: escribiendo, hablando o subiendo tu logo y tus fotos.",
   },
   {
     p: "¿Puedo agregar módulos después?",
@@ -403,7 +396,7 @@ export const preguntas = [
  * Reels de campaña. Cierran con el precio de Buen Fin y "Comenta PÁGINA",
  * así que solo se muestran hasta `reelsHasta`. Con reels sin precio, cambia esa fecha.
  */
-export const reelsHasta = "2026-11-17T23:59:59-06:00";
+export const reelsHasta = "2026-11-13T00:00:00-06:00"; // ocultos: cierran con el precio anterior
 
 export const reels = [
   {

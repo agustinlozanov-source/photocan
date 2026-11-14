@@ -95,7 +95,7 @@ export function PvContacto() {
             decimos qué necesita tu página.
           </p>
           <ul className="mt-8 space-y-3 text-[15px] text-white/80">
-            {["Respuesta en minutos por WhatsApp", "Cotización clara, sin letras chiquitas", "Tu página lista en 10 días hábiles"].map(
+            {["Respuesta en minutos por WhatsApp", "Cotización clara, sin letras chiquitas", "Tu página lista en una semana"].map(
               (t) => (
                 <li key={t} className="flex items-center gap-3">
                   <span className="grid size-5 place-items-center rounded-full bg-amarillo text-[11px] text-black">✓</span>

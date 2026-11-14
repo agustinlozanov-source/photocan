@@ -149,7 +149,7 @@ export const paginaViva = {
     { giro: "Educación y cursos", herramienta: "¿Qué curso es para ti?", boton: "Inscribirme" },
   ],
   incluye:
-    "Las once secciones, la herramienta interactiva de tu giro, el agente 24/7 y todo lo de “por dentro”. Hasta 10 páginas, entregadas en 10 días hábiles desde que tenemos tu material completo.",
+    "Las once secciones, la herramienta interactiva de tu giro, el agente 24/7 y todo lo de “por dentro”. Hasta 10 páginas, lista en máximo una semana desde que terminas tu brief.",
   modulos: [
     "Sesión de fotos",
     "Video",

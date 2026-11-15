@@ -196,7 +196,12 @@ export function calificar(negocios, rubro) {
   const demanda = demandaDe(rubro);
   const base = negocios.map((n) => {
     const d = n.diagnostico ?? {};
-    return { n, d, dolor: dolorDe(d, d.velocidad), valor: valorDe(n.resenas, n.calificacion), contacto: contactoDe(n, d) };
+    // Lo que verificó una persona manda sobre la revisión automática.
+    const v = n.verificacion;
+    let dolor = dolorDe(d, d.velocidad);
+    if (d.tiene && v?.abre === false) dolor = 95;
+    if (d.tiene && v?.abre === true && !d.abre) dolor = 40; // abre, pero no pudimos revisar el detalle
+    return { n, d, dolor, valor: valorDe(n.resenas, n.calificacion), contacto: contactoDe(n, d) };
   });
   // Presión: cuántos de los 10 primeros de Google (sin contarlo a él) tienen buena página.
   const primeros = base.filter((b) => b.n.posicion <= 10);
@@ -213,6 +218,8 @@ export function calificar(negocios, rubro) {
 function razonDe(n, d, f, buenos, total) {
   const partes = [];
   if (!d.tiene) partes.push(d.soloRedes ? "solo tiene redes sociales" : "sin página web");
+  else if (n.verificacion?.abre === false) partes.push("verificado: su página no abre");
+  else if (n.verificacion?.abre === true && !d.abre) partes.push("su página abre (verificado), sin detalle automático");
   else if (!d.abre) partes.push(typeof d.codigo === "number" ? `su página da error ${d.codigo}` : "su página no abrió en la revisión");
   else {
     const fallas = [];
@@ -226,4 +233,16 @@ function razonDe(n, d, f, buenos, total) {
   }
   if (f.presion >= 50) partes.push(`${buenos} de sus ${total} competidores de arriba sí tienen buena página`);
   return partes.join(" · ");
+}
+
+/** Recalcula índice y razón de todos los negocios de un escaneo (tras una verificación manual). */
+export async function recalcular(db, escaneoId, rubro) {
+  const { data } = await db
+    .from("radar_negocios")
+    .select("place_id, posicion, nombre, telefono, sitio, calificacion, resenas, diagnostico, verificacion")
+    .eq("escaneo_id", escaneoId);
+  const notas = calificar(data ?? [], rubro);
+  await Promise.all(
+    notas.map((x) => db.from("radar_negocios").update({ factores: x.factores, indice: x.indice, razon: x.razon }).eq("escaneo_id", escaneoId).eq("place_id", x.place_id)),
+  );
 }

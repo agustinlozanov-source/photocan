@@ -27,7 +27,7 @@ export default async (req) => {
     let porRevisar;
     if (reintentar) {
       // Solo vuelve a revisar las páginas que no abrieron; el índice se recalcula con todos.
-      const { data } = await db.from("radar_negocios").select("place_id, posicion, nombre, telefono, sitio, calificacion, resenas, diagnostico").eq("escaneo_id", escaneo_id);
+      const { data } = await db.from("radar_negocios").select("place_id, posicion, nombre, telefono, sitio, calificacion, resenas, diagnostico, verificacion").eq("escaneo_id", escaneo_id);
       negocios = data ?? [];
       porRevisar = negocios.filter((n) => n.diagnostico?.tiene && !n.diagnostico?.abre);
       await avanzar({ estado: "escaneando", revisados: negocios.length - porRevisar.length, detalle: `Revisando otra vez ${porRevisar.length} páginas que no abrieron…` });
@@ -35,7 +35,7 @@ export default async (req) => {
       await avanzar({ estado: "escaneando", detalle: "Buscando negocios en Google Maps…" });
       negocios = await buscarNegocios(esc.rubro, esc.zona);
       const ahora = new Date().toISOString();
-      await db.from("radar_negocios").insert(negocios.map((n) => ({ ...n, escaneo_id, google_consultado: ahora })));
+      await db.from("radar_negocios").insert(negocios.map((n) => ({ ...n, escaneo_id, responsable: esc.responsable, google_consultado: ahora })));
       await avanzar({ total: negocios.length, detalle: `Revisando ${negocios.length} páginas…` });
       porRevisar = negocios;
     }

@@ -4,7 +4,8 @@ import { MarcoAdmin } from "@/components/admin/MarcoAdmin";
 
 const SECCIONES = [
   { href: "/admin/radar/", titulo: "Radar", texto: "Encuentra negocios por zona y rubro, diagnostica su página y elige a quién contactar.", listo: true },
-  { href: "/admin/equipo/", titulo: "Equipo", texto: "Quién entra al superadministrador y con qué rol.", listo: true },
+  { href: "/admin/objetivos/", titulo: "Objetivos", texto: "Metas semanales de prospección por persona y cómo van contra lo logrado.", listo: true },
+  { href: "/admin/equipo/", titulo: "Equipo", texto: "Quién entra al superadministrador, su puesto, su rol y quién firma.", listo: true },
   { href: "", titulo: "Clientes", texto: "Cada cliente, su página, su plan, sus pagos y sus funciones.", listo: false },
   { href: "", titulo: "Crear páginas", texto: "El mismo motor del portal, operado por el equipo: de una muestra a la página completa.", listo: false },
   { href: "", titulo: "Números del negocio", texto: "Ventas, planes activos, costos de fabricación y margen.", listo: false },

@@ -163,6 +163,7 @@ export default function Radar() {
     return (
       <Pantalla>
         <p className="text-white/70">El Radar es solo para el equipo de Phot8can. Tu cuenta todavía no tiene acceso.</p>
+        <p className="mt-3 text-[13px] text-white/45">Entraste como {sesion.usuario.correo}</p>
       </Pantalla>
     );
 

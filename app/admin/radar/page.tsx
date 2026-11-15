@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSesion } from "@/lib/sesion";
+import { MarcoAdmin } from "@/components/admin/MarcoAdmin";
 import { sb } from "@/lib/supabase";
 
 type Escaneo = { id: string; zona: string; rubro: string; estado: "pendiente" | "escaneando" | "listo" | "error"; total: number; revisados: number; detalle: string | null; creado: string };
@@ -60,8 +60,10 @@ function estadoPagina(d: Diagnostico) {
 }
 
 export default function Radar() {
-  const sesion = useSesion();
-  const [staff, setStaff] = useState<boolean | null>(null);
+  return <MarcoAdmin>{() => <RadarContenido />}</MarcoAdmin>;
+}
+
+function RadarContenido() {
   const [escaneos, setEscaneos] = useState<Escaneo[]>([]);
   const [actual, setActual] = useState<string | null>(null);
   const [negocios, setNegocios] = useState<Negocio[]>([]);
@@ -71,16 +73,6 @@ export default function Radar() {
   const [aviso, setAviso] = useState("");
   const [filtro, setFiltro] = useState<"todos" | "sinPagina" | "elegidos">("todos");
   const [abierto, setAbierto] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (sesion.estado !== "dentro") return;
-    sb()
-      .from("perfiles")
-      .select("es_staff")
-      .eq("id", sesion.usuario.id)
-      .maybeSingle()
-      .then(({ data }) => setStaff(Boolean(data?.es_staff)));
-  }, [sesion]);
 
   const cargarEscaneos = useCallback(async () => {
     const { data } = await sb().from("radar_escaneos").select("*").order("creado", { ascending: false }).limit(30);
@@ -95,8 +87,8 @@ export default function Radar() {
   }, []);
 
   useEffect(() => {
-    if (staff) cargarEscaneos();
-  }, [staff, cargarEscaneos]);
+    cargarEscaneos();
+  }, [cargarEscaneos]);
 
   useEffect(() => {
     if (actual) cargarNegocios(actual);
@@ -149,37 +141,8 @@ export default function Radar() {
     return { total: negocios.length, sin, malas, elegidos: negocios.filter((n) => n.estado === "elegido").length };
   }, [negocios]);
 
-  if (sesion.estado === "cargando" || (sesion.estado === "dentro" && staff === null)) return <Pantalla><p className="text-white/60">Cargando…</p></Pantalla>;
-  if (sesion.estado === "fuera")
-    return (
-      <Pantalla>
-        <p className="text-white/70">Entra con tu correo del equipo y vuelve a esta página.</p>
-        <a href="/portal/entrar/" className="mt-6 inline-flex rounded-full bg-amarillo px-6 py-3 text-[14px] font-bold text-black">
-          Entrar
-        </a>
-      </Pantalla>
-    );
-  if (!staff)
-    return (
-      <Pantalla>
-        <p className="text-white/70">El Radar es solo para el equipo de Phot8can. Tu cuenta todavía no tiene acceso.</p>
-        <p className="mt-3 text-[13px] text-white/45">Entraste como {sesion.usuario.correo}</p>
-      </Pantalla>
-    );
-
   return (
-    <main className="min-h-dvh bg-humo text-black">
-      <header className="bg-black text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-[max(16px,3vw)] py-5">
-          <div className="flex items-center gap-4">
-            <img src="/marca/logo_color_fondo-oscuro.png" alt="Phot8can" className="h-7 w-auto" />
-            <span className="h-6 w-px bg-white/20" />
-            <p className="text-[13px] font-bold tracking-[0.2em] text-amarillo uppercase">Radar</p>
-          </div>
-          <p className="text-[12px] text-white/50">Superadministrador · prospección</p>
-        </div>
-      </header>
-
+    <>
       <div className="mx-auto grid max-w-[1400px] gap-6 px-[max(16px,3vw)] py-8 lg:grid-cols-[300px_1fr]">
         {/* Columna izquierda: nuevo escaneo + historial */}
         <aside className="grid content-start gap-5">
@@ -404,17 +367,6 @@ export default function Radar() {
           )}
         </section>
       </div>
-    </main>
-  );
-}
-
-function Pantalla({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="grid min-h-dvh place-items-center bg-black px-6 text-center text-white">
-      <div>
-        <p className="text-[13px] font-bold tracking-[0.2em] text-amarillo uppercase">Radar</p>
-        <div className="mt-4">{children}</div>
-      </div>
-    </main>
+    </>
   );
 }

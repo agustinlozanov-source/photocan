@@ -108,10 +108,10 @@ export async function salir() {
   await sb().auth.signOut();
 }
 
-export async function pedirEnlace(correo: string) {
+export async function pedirEnlace(correo: string, destino = "/portal/") {
   const { error } = await sb().auth.signInWithOtp({
     email: correo,
-    options: { emailRedirectTo: `${window.location.origin}/portal/`, shouldCreateUser: true },
+    options: { emailRedirectTo: `${window.location.origin}${destino}`, shouldCreateUser: true },
   });
   if (!error) return null;
   if (error.status === 429 || /rate limit/i.test(error.message))

@@ -168,6 +168,9 @@ additional_redirect_urls = [
   "https://www.phot8can.com/portal/",
   "http://localhost:4173/portal/",
   "http://localhost:3000/portal/",
+  "https://phot8can.studio/admin/",
+  "https://phot8can.com/admin/",
+  "http://localhost:4173/admin/",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

@@ -1,16 +1,12 @@
 // POST /api/radar/escanear  { zona, rubro } → arranca un escaneo (solo equipo de Phot8can).
 // La lectura de escaneos y negocios la hace la pantalla directo en Supabase (RLS: solo staff).
-import { json, usuarioDe } from "../lib/comun.mjs";
+import { json } from "../lib/comun.mjs";
+import { delEquipo } from "../lib/equipo.mjs";
 import { admin } from "../lib/sitios.mjs";
 
 export const config = { path: "/api/radar/escanear" };
 
-export async function esStaff(req) {
-  const u = await usuarioDe(req);
-  if (!u) return null;
-  const { data } = await admin().from("perfiles").select("es_staff").eq("id", u.id).maybeSingle();
-  return data?.es_staff ? u : null;
-}
+export const esStaff = delEquipo;
 
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "Método no permitido" }, 405);

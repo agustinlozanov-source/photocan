@@ -18,6 +18,24 @@ export default async (req) => {
   } catch {
     return json({ error: "Solicitud inválida." }, 400);
   }
+  const base = process.env.URL ?? new URL(req.url).origin;
+  const fondo = (cuerpo) =>
+    fetch(`${base}/.netlify/functions/radar-escanear-background`, {
+      method: "POST",
+      headers: { Authorization: req.headers.get("authorization"), "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo),
+    });
+
+  // Volver a revisar las páginas que no abrieron en un escaneo ya hecho.
+  if (d.reintentar) {
+    const id = String(d.escaneo_id ?? "");
+    const { data: e } = await admin().from("radar_escaneos").select("id, estado").eq("id", id).maybeSingle();
+    if (!e) return json({ error: "No encontramos ese escaneo." }, 404);
+    if (e.estado === "escaneando") return json({ error: "Ese escaneo sigue trabajando." }, 409);
+    await fondo({ escaneo_id: id, reintentar: true });
+    return json({ escaneo_id: id }, 202);
+  }
+
   const zona = String(d.zona ?? "").trim().slice(0, 120);
   const rubro = String(d.rubro ?? "").trim().slice(0, 80);
   if (!zona || !rubro) return json({ error: "Escribe la zona y el rubro." }, 400);
@@ -26,11 +44,6 @@ export default async (req) => {
   const { data: esc, error } = await admin().from("radar_escaneos").insert({ zona, rubro, creado_por: u.id }).select("id").single();
   if (error) return json({ error: `No se pudo crear el escaneo: ${error.message}` }, 500);
 
-  const base = process.env.URL ?? new URL(req.url).origin;
-  await fetch(`${base}/.netlify/functions/radar-escanear-background`, {
-    method: "POST",
-    headers: { Authorization: req.headers.get("authorization"), "Content-Type": "application/json" },
-    body: JSON.stringify({ escaneo_id: esc.id }),
-  });
+  await fondo({ escaneo_id: esc.id });
   return json({ escaneo_id: esc.id }, 202);
 };

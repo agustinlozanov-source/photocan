@@ -9,6 +9,8 @@ type Diagnostico = {
   tiene?: boolean;
   soloRedes?: boolean;
   abre?: boolean;
+  codigo?: number | string;
+  gratuito?: boolean;
   https?: boolean;
   whatsapp?: boolean;
   formulario?: boolean;
@@ -53,7 +55,7 @@ async function token() {
 function estadoPagina(d: Diagnostico) {
   if (!d || d.tiene === undefined) return { t: "Revisando…", c: "bg-black/5 text-black/50" };
   if (!d.tiene) return d.soloRedes ? { t: "Solo redes", c: "bg-[#fde6d8] text-[#9a3b0b]" } : { t: "Sin página", c: "bg-[#fde0de] text-[#a3231b]" };
-  if (!d.abre) return { t: "No abre", c: "bg-[#fde0de] text-[#a3231b]" };
+  if (!d.abre) return { t: typeof d.codigo === "number" ? `Error ${d.codigo}` : "No abrió", c: "bg-[#fde0de] text-[#a3231b]" };
   const p = d.velocidad?.puntaje;
   if (p != null && p < 50) return { t: `Lenta ${p}/100`, c: "bg-[#fdf0d0] text-[#8a5f00]" };
   return { t: p != null ? `Abre · ${p}/100` : "Abre", c: "bg-[#e3f2ea] text-[#1f7a4d]" };
@@ -119,6 +121,19 @@ function RadarContenido() {
     if (!r?.ok) return setAviso(d.error ?? "No se pudo arrancar el escaneo.");
     setActual(d.escaneo_id);
     setRubro("");
+    cargarEscaneos();
+  };
+
+  const noAbrieron = negocios.filter((n) => n.diagnostico?.tiene && n.diagnostico?.abre === false).length;
+  const reintentar = async () => {
+    if (!esc) return;
+    setAviso("");
+    const r = await fetch("/api/radar/escanear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}` },
+      body: JSON.stringify({ reintentar: true, escaneo_id: esc.id }),
+    }).catch(() => null);
+    if (!r?.ok) return setAviso("No se pudo volver a revisar.");
     cargarEscaneos();
   };
 
@@ -247,6 +262,12 @@ function RadarContenido() {
                 </div>
               )}
 
+              {esc.estado === "listo" && noAbrieron > 0 && (
+                <button onClick={reintentar} className="mt-5 rounded-full bg-white px-4 py-2 text-[13px] font-bold ring-1 ring-black/10 hover:ring-black/40">
+                  Volver a revisar las {noAbrieron} páginas que no abrieron
+                </button>
+              )}
+
               <div className="mt-5 flex flex-wrap gap-2">
                 {(
                   [
@@ -327,6 +348,7 @@ function RadarContenido() {
                               {n.diagnostico?.abre && (
                                 <>
                                   <li>{n.diagnostico.https ? "✓" : "✗"} Candado de seguridad</li>
+                                  {n.diagnostico.gratuito && <li>✗ Hecha en un constructor gratuito</li>}
                                   <li>{n.diagnostico.whatsapp ? "✓" : "✗"} WhatsApp</li>
                                   <li>{n.diagnostico.formulario ? "✓" : "✗"} Formulario</li>
                                   <li>{n.diagnostico.medicion ? "✓" : "✗"} Medición (pixel o Analytics)</li>
@@ -353,7 +375,9 @@ function RadarContenido() {
                                   </a>
                                 </li>
                               )}
-                              <li className="text-black/40">Lugar {n.posicion} en Google</li>
+                              <li className="text-black/40">
+                                Lugar {n.posicion} en Google{n.categoria ? ` · ${n.categoria}` : ""}
+                              </li>
                             </ul>
                           </div>
                         </div>

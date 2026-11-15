@@ -16,21 +16,32 @@ async function enParalelo(lista, n, fn) {
 export default async (req) => {
   const u = await esStaff(req);
   if (!u) return new Response("No autorizado", { status: 403 });
-  const { escaneo_id } = await req.json();
+  const { escaneo_id, reintentar } = await req.json();
   const db = admin();
   const { data: esc } = await db.from("radar_escaneos").select("*").eq("id", escaneo_id).single();
   if (!esc) return new Response("Sin escaneo", { status: 404 });
   const avanzar = (cambios) => db.from("radar_escaneos").update(cambios).eq("id", escaneo_id);
 
   try {
-    await avanzar({ estado: "escaneando", detalle: "Buscando negocios en Google Maps…" });
-    const negocios = await buscarNegocios(esc.rubro, esc.zona);
-    const ahora = new Date().toISOString();
-    await db.from("radar_negocios").insert(negocios.map((n) => ({ ...n, escaneo_id, google_consultado: ahora })));
-    await avanzar({ total: negocios.length, detalle: `Revisando ${negocios.length} páginas…` });
+    let negocios;
+    let porRevisar;
+    if (reintentar) {
+      // Solo vuelve a revisar las páginas que no abrieron; el índice se recalcula con todos.
+      const { data } = await db.from("radar_negocios").select("place_id, posicion, nombre, telefono, sitio, calificacion, resenas, diagnostico").eq("escaneo_id", escaneo_id);
+      negocios = data ?? [];
+      porRevisar = negocios.filter((n) => n.diagnostico?.tiene && !n.diagnostico?.abre);
+      await avanzar({ estado: "escaneando", revisados: negocios.length - porRevisar.length, detalle: `Revisando otra vez ${porRevisar.length} páginas que no abrieron…` });
+    } else {
+      await avanzar({ estado: "escaneando", detalle: "Buscando negocios en Google Maps…" });
+      negocios = await buscarNegocios(esc.rubro, esc.zona);
+      const ahora = new Date().toISOString();
+      await db.from("radar_negocios").insert(negocios.map((n) => ({ ...n, escaneo_id, google_consultado: ahora })));
+      await avanzar({ total: negocios.length, detalle: `Revisando ${negocios.length} páginas…` });
+      porRevisar = negocios;
+    }
 
-    let revisados = 0;
-    await enParalelo(negocios, 5, async (n) => {
+    let revisados = negocios.length - porRevisar.length;
+    await enParalelo(porRevisar, 5, async (n) => {
       const diagnostico = await revisarPagina(n.sitio);
       if (diagnostico.abre) diagnostico.velocidad = await velocidad(n.sitio);
       n.diagnostico = diagnostico;

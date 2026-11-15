@@ -73,8 +73,26 @@ const conLimite = async (url, ms, opciones = {}) => {
   }
 };
 
+// Se presenta como navegador normal: muchas páginas cierran la conexión a lo que parece robot.
+const NAVEGADOR = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
+};
+
 /** Abre la página del negocio y ve lo básico. Solo lee lo que el propio negocio publica. */
 export async function revisarPagina(sitio) {
+  const primera = await revisarUnaVez(sitio, 15000);
+  // Antes de decir que no abre, un segundo intento con más tiempo.
+  if (primera.tiene && !primera.abre) {
+    await new Promise((res) => setTimeout(res, 1500));
+    const segunda = await revisarUnaVez(sitio, 25000);
+    return segunda.abre ? segunda : { ...segunda, intentos: 2 };
+  }
+  return primera;
+}
+
+async function revisarUnaVez(sitio, ms) {
   if (!sitio) return { tiene: false };
   let host = "";
   try {
@@ -85,7 +103,7 @@ export async function revisarPagina(sitio) {
   if (SOLO_REDES.test(host)) return { tiene: false, soloRedes: true, red: host };
 
   try {
-    const r = await conLimite(sitio, 12000, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (compatible; Phot8canRadar/1.0)" } });
+    const r = await conLimite(sitio, ms, { redirect: "follow", headers: NAVEGADOR });
     const final = r.url || sitio;
     if (!r.ok) return { tiene: true, abre: false, codigo: r.status };
     const html = (await r.text()).slice(0, 600_000);
@@ -194,12 +212,12 @@ export function calificar(negocios, rubro) {
 
 function razonDe(n, d, f, buenos, total) {
   const partes = [];
-  if (n.resenas) partes.push(`${n.calificacion ?? "—"}★ con ${n.resenas} reseñas`);
   if (!d.tiene) partes.push(d.soloRedes ? "solo tiene redes sociales" : "sin página web");
-  else if (!d.abre) partes.push("su página no abre");
+  else if (!d.abre) partes.push(typeof d.codigo === "number" ? `su página da error ${d.codigo}` : "su página no abrió en la revisión");
   else {
     const fallas = [];
     if (!d.https) fallas.push("sin candado de seguridad");
+    if (d.gratuito) fallas.push("hecha en un constructor gratuito");
     if (d.velocidad?.puntaje != null && d.velocidad.puntaje < 50) fallas.push(`lenta en celular (${d.velocidad.puntaje}/100)`);
     if (!d.whatsapp) fallas.push("sin WhatsApp");
     if (!d.formulario) fallas.push("sin formulario");

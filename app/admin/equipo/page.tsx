@@ -124,7 +124,7 @@ function EquipoContenido({ rol }: { rol: RolEquipo }) {
             </button>
           </div>
           {aviso && <p className="mt-3 text-[13px] text-white/70">{aviso}</p>}
-          <p className="mt-3 text-[12px] text-white/40">Administrador: todo, incluido el equipo y los objetivos. Equipo: Radar y clientes.</p>
+          <p className="mt-3 text-[12px] text-white/40">Administrador: todo, incluido el equipo. Equipo: clientes y páginas.</p>
         </section>
       )}
 

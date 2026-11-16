@@ -9,8 +9,6 @@ export type RolEquipo = "admin" | "equipo";
 
 const NAV: { href: string; texto: string; soloAdmin?: boolean }[] = [
   { href: "/admin/", texto: "Inicio" },
-  { href: "/admin/radar/", texto: "Radar" },
-  { href: "/admin/objetivos/", texto: "Objetivos" },
   { href: "/admin/equipo/", texto: "Equipo" },
 ];
 
